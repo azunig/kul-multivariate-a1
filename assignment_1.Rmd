@@ -1,0 +1,214 @@
+---
+title: "Multivariate Assignment"
+author: "Aharon V. Zúñiga"
+date: "10/19/2020"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+<!-- > round(pcaraw$sdev^2,2) -->
+<!--  [1] 0.70 0.27 0.12 0.08 0.03 0.03 0.02 0.02 0.01 0.01 -->
+<!-- > 0.83789818^2 -->
+<!-- [1] 0.7020734 -->
+<!-- > round(0.83789818^2,2) -->
+<!-- [1] 0.7 -->
+<!-- > sqrt(0.7020734) -->
+<!-- [1] 0.8378982 -->
+
+
+
+```{r setup, include=FALSE}
+#Libaries 
+#install.packages(dplyr)
+#install.packages(Matrix.utils)
+#install.packages("maptools")
+library(maptools)
+library("dplyr")
+library("Matrix.utils")
+library(ggplot2)
+library("lavaan")
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 0 Descriptive analysis. :D
+
+1 V_creative It is important to this person to think up new ideas and be creative; to do things one’s own way.
+2 V_rich It is important to this person to be rich; to have a lot of money and expensive things.
+3 V_secure Living in secure surroundings is important to this person; to avoid anything that might be dangerous.
+4 V_spoil_oneself It is important to this person to have a good time;to “spoil” oneself. 
+5 V_do_good It is important to this person to do something for the good of 
+6 V_be_successful Being very successful is important to this person; to have people recognize one’s achievements.
+7 V_exciting_life Adventure and taking risks are important to this person; to have an exciting life.
+8 V_behave_properly It is important to this person to always behave properly; to avoid doing anything people would say is wrong.
+9 V_protect_environment Looking after the environment is important to this person; to care for nature and save life resources.
+10 V_tradition Tradition is important to this person; to follow the customs handed down by one’s religion or family
+
+
+```{r step_1}
+load("~/Documents/Multivariante/R_Scripts/wvs.Rdata")
+summary(wvs[,1:10])
+zscore <- function(x) {
+  zscore <- (x-mean(x))/sd(x)
+  } 
+```
+
+# 1. PCA + Biplot. 
+
+### here explanation  (empirical analysis)
+
+#### Decision, the first component will have the maximun variance of the raw data. 
+```{r step_2}
+zgspraw <- apply(wvs[,1:10],2,zscore) 
+zgspraw <- cbind(zgspraw,country=wvs$country)
+summary(zgspraw)
+```
+
+```{r step_3}
+
+av <- mean(zgspraw[,1])
+c<-aggregate.Matrix(zgspraw, groupings = zgspraw[,'country',drop=FALSE],fun='mean')
+c <-as.matrix(c)
+
+```
+
+```{r step_4}
+
+pcaraw <-prcomp(c[,1:10]) 
+attributes(pcaraw)
+#variance
+round(pcaraw$sdev^2,2)
+# proportion of explained variance per component ****
+round(pcaraw$sdev^2/10,5)
+
+# compute component loadings #pcaraw$rotation
+A<-pcaraw$rotation%*%diag(pcaraw$sdev) #%*% multiplication matrix
+
+#loading multiplied by variance of each variable
+plot(A[,1:2],xlab="PC1",ylab="PC2")
+
+pointLabel(A[,1],A[,2],names(wvs[,1:10]),
+   cex=1) 
+
+####
+# compute unstandardized component scores
+Zun<-zgspraw[,1:10]%*%pcaraw$rotation[,1:10]
+# compute standardized component scores
+Zs<-zgspraw[,1:10]%*%pcaraw$rotation[,1:10]%*%diag(1/pcaraw$sdev[1:10])
+# plot component scores for first 2 unstandardized components
+plot(Zun[,1:2],xlim=c(-3,8),ylim=c(-3,3),xlab="PC1",ylab="PC2")
+#pointLabel(Zun[,1],Zun[,2],wvs[,10],cex=0.9) 
+
+```
+
+
+
+
+
+
+# 2. Exploratory Factor Analysis :D
+
+column	variable	item									
+16. J_claiming_benefits	Claiming government benefits to which you are not entitled  
+17.	J_avoiding_fare	Avoiding	a	fare	on	public	transport  
+18.	J_stealing_property	Stealing	property  
+19.	J_cheating_taxes	Cheating	on	taxes	if	you	have	a	chance  
+20.	J_accept_bribe	Someone	accepting	a	bribe	in	the	course	of	their	duties  
+21.	J_homosexuality	Homosexuality  
+22.	J_prostitution	Prostitution  
+23.	J_abortion	Abortion  
+24.	J_divorce	Divorce  
+25.	J_sex_before_marriage	Sex	before	marriage  
+26.	J_suicide	Suicide  
+27.	J_beat_wif	For	a	man	to	beat	his	wife  
+28.	J_parents_beating_children	Parents	beating	children  
+29.	J_violence	Violence	against	other	people  
+
+
+
+```{r 2step_1}
+#print matrix of observed correlations
+
+zjustif <- apply(wvs[,16:29],2,zscore) 
+cormat <- round(cor(zjustif),2)
+covmat <- round(cov(zjustif),2)
+
+#round(cov(wvs[,16:29]),2) when data is not stadarized, we see the differences.
+
+
+## estimate EFA with xxx common factors
+## The factanal() function runs EFA on the correlation matrix
+fa_justif <-factanal(zjustif, factors=7, rotation="none")
+fa_justif
+
+
+#EFA with varimax rotation and 3 factors - varimax orthogonal - prohibited cor.
+favm_justif<-factanal(zjustif,factors=3, rotation="varimax")
+print(favm_justif, digits = 3, cutoff = 0.4, sort = TRUE)
+
+#EFA with promax rotation and 4 factors - promax oblique - allows correlation between factors
+favm_justif2 <- factanal(zjustif,factors=4, rotation="promax")
+print(favm_justif2, digits = 3, cutoff = 0.4, sort = TRUE)
+
+pjustif<-prcomp(zjustif)
+screeplot(pjustif,type="lines")
+
+
+## score -- I choose towards to find a explanation in 3 areas. Financial issues
+## interpersonal issues and Violence. 
+favm_justif<-factanal(zjustif,factors=3, rotation="varimax",scores="regression")
+print(favm_justif, digits = 3, cutoff = 0.5, sort = TRUE)
+scores <- favm_justif$scores
+colnames(scores)<-c("Interpersonal","Financial", "Violence")
+zjustif_score <- data.frame(zjustif,scores,country=wvs$country)
+
+ggplot(data = zjustif_score,aes(Interpersonal, fill=country)) +
+  geom_density()  + 
+ facet_wrap(~country) + theme(legend.position = "none") +
+  ggtitle("Factor 1 - Interpersonal Justification")
+  
+ggplot(data = zjustif_score,aes(Financial, fill=country)) +
+  geom_density()  + 
+ facet_wrap(~country) + theme(legend.position = "none") +
+  ggtitle("Factor 2 - Financial Justification")
+
+ggplot(data = zjustif_score,aes(Violence, fill=country)) +
+  geom_density()  + 
+ facet_wrap(~country) + theme(legend.position = "none") +
+  ggtitle("Factor 3 - Violence Justification")
+
+##### standarise.
+
+```
+
+
+# 3. Confirmatory Factor Analysis :)
+
+```{r 3step_1}
+#pas <- wvs[wvs$country %in% c("Netherlands","Malaysia"),]
+#tail(pas)
+zjustif_cfa <- apply(wvs[wvs$country %in% c("Netherlands","Malaysia"),16:29],2,zscore)
+covmat_cfa <- cov(zjustif_cfa) #no round to get more detailed data
+~
+cfa3 <- 'Interpersonal =~ 1*J_homosexuality+J_prostitution+J_abortion+J_divorce+J_sex_before_marriage+J_suicide
+   Financial =~ 1*J_claiming_benefits+J_avoiding_fare+J_stealing_property+J_cheating_taxes+J_accept_bribe
+   Violence =~ 1*J_beat_wife+ J_parents_beating_children+J_violence
+   Financial ~~ Violence
+   Violence =~ J_suicide
+   Violence =~ J_prostitution'
+
+fitcfa3 <- cfa(cfa3, sample.cov = covmat_cfa, sample.nobs = 2473)
+
+summary(fitcfa3, fit.measures=TRUE)
+standardizedSolution(fitcfa3)
+modificationIndices(fitcfa3, minimum.value = 10, sort = TRUE)
+
+
+semPaths(fitcfa3, title = FALSE, curvePivot = TRUE)
+
+semPaths(survey.scalfit3,"model","std","lisrel", edge.label.cex = 1.2, intercepts = FALSE, layout = "tree2",
+                     panelGroups = FALSE, ask  = FALSE, groups = "latent", pastel = TRUE, exoCov = TRUE, rotation = 1)gm
+
+
+
+

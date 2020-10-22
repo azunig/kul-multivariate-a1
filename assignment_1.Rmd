@@ -28,6 +28,7 @@ library("dplyr")
 library("Matrix.utils")
 library(ggplot2)
 library("lavaan")
+library(candisc)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
@@ -46,7 +47,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r step_1}
-load("~/Documents/Multivariante/R_Scripts/wvs.Rdata")
+load("wvs.Rdata")
 summary(wvs[,1:10])
 zscore <- function(x) {
   zscore <- (x-mean(x))/sd(x)
@@ -207,7 +208,84 @@ modificationIndices(fitcfa3, minimum.value = 10, sort = TRUE)
 semPaths(fitcfa3, title = FALSE, curvePivot = TRUE)
 
 semPaths(survey.scalfit3,"model","std","lisrel", edge.label.cex = 1.2, intercepts = FALSE, layout = "tree2",
-                     panelGroups = FALSE, ask  = FALSE, groups = "latent", pastel = TRUE, exoCov = TRUE, rotation = 1)gm
+panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRUE, rotation = 1)
+
+
+```
+
+
+
+
+# 5. Canonical Correlation Analysis :)
+
+ 1. How many canonical correlations are significant? 
+ 
+  The H0 test indicate that the first five canonical correlations are significant because, 
+  Pr(> F) is lower than significance level of '0.05' (5%). This result shows that H0: 
+  "The canonical correlations in the current row and all that follow are zero", thus can be rejected.
+ 
+ 2. How can you interpret the canonical variates?
+  For the current analysis there are 5significant  canonical correlations, however, three of them explain the higher amount of variance. For that reason, the first three are selected.
+  
+  CC1 -> Is represented by religious beliefs on x variables and interpersonal matters on the y variables.
+    Less regiliosity more justification in sexual behavior (such as homosexuality,prostitution, abortion, divorce, sex before marriage.)
+  
+  CC2 -> Is represented by ocurrency of Police or military interfere in peoples's private life on x variables and    ocurrence of crimes (such as cheating_taxes & stealing_property) on y variable.
+  CC3 -> Is represented by ocurrency of Police or military interfere in peoples's private life & Racist behavior on x variables and ocurrence of crimes (such as violence, J_accept_bribe, J_cheating_taxes, J_stealing_property        & stealing_property) on y variable.
+ 
+ 3. How much variance in the Y variables can be explained by the X variables?
+  By using just the first canonical correlation 92.84477 percent of the variance can be explained.
+
+
+ 
+
+```{r 5step_1}
+set_x <- c("R_attend_religious_services","R_pray","R_importance_God", "CR_robberies", "CR_alcohol", "CR_police_military", "CR_racist_behavior", "CR_drug_sale")
+  
+set_y <- c("J_avoiding_fare", "J_stealing_property", "J_cheating_taxes", "J_accept_bribe", "J_homosexuality", "J_prostitution", "J_abortion", "J_divorce", "J_sex_before_marriage", "J_suicide", "J_beat_wife", "J_parents_beating_children", "J_violence")
+
+
+ds <- wvs[wvs$country %in% c("Netherlands","Malaysia"),c(set_x, set_y, "country")]
+str(ds)
+
+#conduct canonical correlation analysis
+cancor.out1<-cancor(x = ds[,set_x], y = ds[,set_y]) 
+summary(cancor.out1)
+
+
+cancor.out2<-cancor(cbind(J_avoiding_fare, J_stealing_property, J_cheating_taxes, J_accept_bribe, J_homosexuality, J_prostitution, J_abortion, J_divorce, J_sex_before_marriage, J_suicide, J_beat_wife, J_parents_beating_children, J_violence)
+                    ~
+R_attend_religious_services+R_pray+R_importance_God+ CR_robberies+ CR_alcohol+ CR_police_military+ CR_racist_behavior+ CR_drug_sale, data = ds)  
+
+summary(cancor.out2)
+
+#print canonical loadings
+cancor.out1$structure$X.xscores
+cancor.out1$structure$Y.yscores
+
+#print redundancies
+redu<-redundancy(cancor.out1)
+round(redu$Xcan,3)
+round(redu$Ycan,3)
+
+#computation redundancies from output
+R2tu<-cancor.out1$cancor^2
+VAFYbyt<-apply(cancor.out1$structure$Y.yscores^2,2,sum)/5
+redund<-R2tu*VAFYbyt
+a<- round(cbind(R2tu,VAFYbyt,redund,total=cumsum(redund)),3)
+sum(a[,3])
+Ycan1
+Xcan1
+
+plot(cancor.out1$scores$X,xlab="CC1",ylab="C.C.2", )
+plot(cancor.out1$scores$Y,xlab="Y C.C.1",ylab="C.C.2")
+
+pointLabel(A[,1],A[,2],names(wvs[,1:10]),
+   cex=1) 
+
+
+```
+
 
 
 

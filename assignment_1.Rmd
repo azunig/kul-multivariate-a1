@@ -218,48 +218,50 @@ Conduct a canonical correlation analysis to investigate the relations between th
 Conduct the analysis on standardized items using the data of the countries “Netherlands”
 and “Malaysia”.
 
-
-### 1. How many canonical correlations are significant? 
+ Here the first step creating both set of variables 
  
-  The H0 test indicate that the first five canonical correlations are significant because, 
-  Pr(> F) is lower than significance level of '0.05' (5%). This result shows that H0: 
-  "The canonical correlations in the current row and all that follow are zero", thus can be rejected.
- 
-### 2. How can you interpret the canonical variates?
-  For the current analysis there are 5significant  canonical correlations, however, three of them explain the higher amount of variance. For that reason, the first three are selected.
-  
-  CC1 -> Is represented by religious beliefs on x variables and interpersonal matters on the y variables.
-    Less regiliosity more justification in sexual behavior (such as homosexuality,prostitution, abortion, divorce, sex before marriage.)
-  
-  CC2 -> Is represented by ocurrency of Police or military interfere in peoples's private life on x variables and    ocurrence of crimes (such as cheating_taxes & stealing_property) on y variable.
-  
-  CC3 -> Is represented by ocurrency of Police or military interfere in peoples's private life & Racist behavior on x variables and ocurrence of crimes (such as violence, J_accept_bribe, J_cheating_taxes, J_stealing_property        & stealing_property) on y variable.
- 
-### 3. How much variance in the Y variables can be explained by the X variables?
-  By using just the first canonical correlation 92.84477 percent of the variance can be explained.
-
-
- 
-
 ```{r 5step_1}
-set_x <- c("R_attend_religious_services","R_pray","R_importance_God", "CR_robberies", "CR_alcohol", "CR_police_military", "CR_racist_behavior", "CR_drug_sale")
+ set_x <- c("R_attend_religious_services","R_pray","R_importance_God", "CR_robberies", "CR_alcohol", "CR_police_military", "CR_racist_behavior", "CR_drug_sale")
   
 set_y <- c("J_avoiding_fare", "J_stealing_property", "J_cheating_taxes", "J_accept_bribe", "J_homosexuality", "J_prostitution", "J_abortion", "J_divorce", "J_sex_before_marriage", "J_suicide", "J_beat_wife", "J_parents_beating_children", "J_violence")
 
-
 ds <- wvs[wvs$country %in% c("Netherlands","Malaysia"),c(set_x, set_y, "country")]
 str(ds)
-
+ 
 #conduct canonical correlation analysis
 cancor.out1<-cancor(x = ds[,set_x], y = ds[,set_y]) 
 summary(cancor.out1)
 
+```
 
-cancor.out2<-cancor(cbind(J_avoiding_fare, J_stealing_property, J_cheating_taxes, J_accept_bribe, J_homosexuality, J_prostitution, J_abortion, J_divorce, J_sex_before_marriage, J_suicide, J_beat_wife, J_parents_beating_children, J_violence)
-                    ~
-R_attend_religious_services+R_pray+R_importance_God+ CR_robberies+ CR_alcohol+ CR_police_military+ CR_racist_behavior+ CR_drug_sale, data = ds)  
+### 1. How many canonical correlations are significant? 
+ 
+  The **H0 test** indicate that the __first five canonical__ correlations are significant because, __Pr(>F)__ is lower than significance level of __'0.05' (5%)__. This result shows that __H0__: 
+ __"The canonical correlations in the current row and all that follow are zero"__, thus can be rejected.
 
-summary(cancor.out2)
+### 2. How can you interpret the canonical variates?
+  For the current analysis there are 5significant  canonical correlations, however, three of them explain the higher amount of variance. For that reason, the first three are selected.
+  
+ __CC1 ->__ Is represented by religious beliefs on x variables and interpersonal matters on the y variables.
+    Less regiliosity more justification in sexual behavior (such as homosexuality,prostitution, abortion, divorce, sex before marriage.)
+  
+ __CC2 ->__ Is represented by ocurrency of Police or military interfere in peoples's private life on x variables and ocurrence of crimes (such as cheating_taxes & stealing_property) on y variable.
+  
+ __CC3 ->__ Is represented by ocurrency of Police or military interfere in peoples's private life & Racist behavior on x variables and ocurrence of crimes (such as violence, J_accept_bribe, J_cheating_taxes, J_stealing_property & stealing_property) on y variable.
+ 
+### 3. How much variance in the Y variables can be explained by the X variables?
+  By using just the first canonical correlation __92.84477__ percent of the variance can be explained.
+
+```{r 5step_x}
+
+
+
+
+#cancor.out2<-cancor(cbind(J_avoiding_fare, J_stealing_property, J_cheating_taxes, J_accept_bribe, #J_homosexuality, J_prostitution, J_abortion, J_divorce, J_sex_before_marriage, J_suicide, J_beat_wife, #J_parents_beating_children, J_violence)
+#                    ~
+#R_attend_religious_services+R_pray+R_importance_God+ CR_robberies+ CR_alcohol+ CR_police_military+ #CR_racist_behavior+ CR_drug_sale, data = ds)  
+
+#summary(cancor.out2)
 
 #print canonical loadings
 cancor.out1$structure$X.xscores

@@ -212,8 +212,8 @@ panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRU
 
 ### Canonical correlation analysis
 Conduct a canonical correlation analysis to investigate the relations between the following two sets of variables: 
-* Set of X variables: 3 items about importance of religion (see Table 4) and 5 items about occurrence of crimes in the neighborhood (see Table 2) 
-* Set of Y variables: 14 items about the justifiability of behaviors (see Table 3) 
+  * Set of X variables: 3 items about importance of religion __(see Table 4)__ and 5 items about occurrence of crimes in the neighborhood __(see Table 2)__.  
+  * Set of Y variables: 14 items about the justifiability of behaviors __(see Table 3)__.
 
 Conduct the analysis on standardized items using the data of the countries “Netherlands”
 and “Malaysia”.
@@ -254,9 +254,6 @@ summary(cancor.out1)
 
 ```{r 5step_x}
 
-
-
-
 #cancor.out2<-cancor(cbind(J_avoiding_fare, J_stealing_property, J_cheating_taxes, J_accept_bribe, #J_homosexuality, J_prostitution, J_abortion, J_divorce, J_sex_before_marriage, J_suicide, J_beat_wife, #J_parents_beating_children, J_violence)
 #                    ~
 #R_attend_religious_services+R_pray+R_importance_God+ CR_robberies+ CR_alcohol+ CR_police_military+ #CR_racist_behavior+ CR_drug_sale, data = ds)  
@@ -279,9 +276,6 @@ redund<-R2tu*VAFYbyt
 a<- round(cbind(R2tu,VAFYbyt,redund,total=cumsum(redund)),3)
 
 ```
-
-
-
 
 
 

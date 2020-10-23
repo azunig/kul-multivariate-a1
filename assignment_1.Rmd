@@ -1,6 +1,6 @@
 ---
 title: "Multivariate Assignment - 1"
-author: "Elena Ortega, Damiano Alessi, Xieru Song, Aharon V. Zúñiga "
+author: "Elena Ortega - Damiano Alessi - Xieru Song - Aharon V. Zúñiga."
 date: "October - 2020"
 output: 
   html_document:
@@ -36,7 +36,7 @@ zscore <- function(x) {
 
 
 
-# 1 - [PCA + Biplot] 
+# 1 - [PCA + Biplot of value items] 
 
 ### PCA + Biplot of value items
  Standardize the 10 items that measure values of the respondents (see Table 1) and compute  a matrix of 34  countries x 10 items that includes in each cell the mean score of respondents  in a country on a standardized item. Next apply principal components analysis to the data matrix, and make a biplot. Discuss what you can conclude from the PCA and the biplot. 
@@ -86,7 +86,7 @@ plot(Zun[,1:2],xlim=c(-3,8),ylim=c(-3,3),xlab="PC1",ylab="PC2")
 ```
 
 
-# 2 - [Exploratory Factor Analysis] 
+# 2 - [Exploratory factor analysis (EFA)] 
 
 ### Exploratory factor analysis (EFA)
 Standardize the 14 justifiability items (see Table 3) and use exploratory factor analysis to summarize the scores on the 14 items using meaningful factors. Discuss how well the selected factor model fits the data and interpret the extracted factors.
@@ -146,7 +146,7 @@ ggplot(data = zjustif_score,aes(Violence, fill=country)) +
 ```
 
 
-# 3 - [Confirmatory Factor Analysis] 
+# 3 - [Confirmatory factor analysis (CFA)] 
 
 ### Confirmatory factor analysis (CFA)
 Select the data of the countries “Netherlands” and “Malaysia” and conduct confirmatory factor analysis on the covariance matrix of the justifiability items (see Table 3). Use your insights obtained with the EFA to specify a confirmatory factor analysis model in which each item is constrained to have a loading on one factor.
@@ -179,7 +179,7 @@ panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRU
 
 ```
 
-# 4 - [SEM] 
+# 4 - [Structural equation model (SEM)] 
 
 ### Structural equation model (SEM)
 Continue working on the data of the countries “Netherlands” and “Malaysia”. Estimate a structural equation model to investigate how the importance of religion affects the justifiability of behaviors for respondents. Does the result of the analysis differ for respondents of the two countries?
@@ -218,13 +218,13 @@ Conduct the analysis on standardized items using the data of the countries “Ne
 and “Malaysia”.
 
 
-#### 1. How many canonical correlations are significant? 
+### 1. How many canonical correlations are significant? 
  
   The H0 test indicate that the first five canonical correlations are significant because, 
   Pr(> F) is lower than significance level of '0.05' (5%). This result shows that H0: 
   "The canonical correlations in the current row and all that follow are zero", thus can be rejected.
  
-#### 2. How can you interpret the canonical variates?
+### 2. How can you interpret the canonical variates?
   For the current analysis there are 5significant  canonical correlations, however, three of them explain the higher amount of variance. For that reason, the first three are selected.
   
   CC1 -> Is represented by religious beliefs on x variables and interpersonal matters on the y variables.
@@ -234,7 +234,7 @@ and “Malaysia”.
   
   CC3 -> Is represented by ocurrency of Police or military interfere in peoples's private life & Racist behavior on x variables and ocurrence of crimes (such as violence, J_accept_bribe, J_cheating_taxes, J_stealing_property        & stealing_property) on y variable.
  
-#### 3. How much variance in the Y variables can be explained by the X variables?
+### 3. How much variance in the Y variables can be explained by the X variables?
   By using just the first canonical correlation 92.84477 percent of the variance can be explained.
 
 
@@ -346,14 +346,14 @@ a<- round(cbind(R2tu,VAFYbyt,redund,total=cumsum(redund)),3)
 
 ## Libraries
 
-* [maptools](https://cran.r-project.org/web/packages/xtable/) - maptools 
-* [dplyr](https://cran.r-project.org/web/packages/stargazer/) - dplyr
-* [Matrix.utils](http://rapporter.github.io/pander/) -  Matrix.utils
-* [ggplot2](https://cran.r-project.org/web/packages/tables/) -  ggplot2 
-* [lavaan](http://eusebe.github.io/ascii/) - lavaan
-* [candisc](http://eusebe.github.io/ascii/) - candisc
-* [semTools](http://eusebe.github.io/ascii/) - semTools
-* [semPlot](http://eusebe.github.io/ascii/) - semPlot
-* [knitr](http://eusebe.github.io/ascii/) - knitr
-* [tables](http://eusebe.github.io/ascii/) - tables
+* [maptools](https://cran.r-project.org/web/packages/maptools/index.html) - maptools 
+* [dplyr](https://cran.r-project.org/web/packages/dplyr/index.html) - dplyr
+* [Matrix.utils](https://cran.r-project.org/web/packages/Matrix.utils/index.html) -  Matrix.utils
+* [ggplot2](https://cran.r-project.org/web/packages/ggplot2/index.html) -  ggplot2 
+* [lavaan](https://cran.r-project.org/web/packages/lavaan/lavaan.pdf) - lavaan
+* [candisc](https://cran.r-project.org/web/packages/candisc/index.html) - candisc
+* [semTools](https://cran.r-project.org/web/packages/semTools/index.html) - semTools
+* [semPlot](https://cran.r-project.org/web/packages/semPlot/semPlot.pdf) - semPlot
+* [knitr](https://cran.r-project.org/web/packages/knitr/index.html) - knitr
+* [tables](https://cran.r-project.org/web/packages/tables/vignettes/tables.pdf) - tables
 

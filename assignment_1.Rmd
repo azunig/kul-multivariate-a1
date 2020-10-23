@@ -25,7 +25,9 @@ library(tables)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# 0 - [Descriptive & Basis analysis] 
+# [Descriptive & Basis analysis] 
+
+### Descriptive & Basis analysis
 ```{r step_1}
 load("wvs.Rdata")
 summary(wvs[,1:10])
@@ -36,7 +38,7 @@ zscore <- function(x) {
 
 
 
-# 1 - [PCA + Biplot of value items] 
+# [PCA + Biplot of value items] 
 
 ### PCA + Biplot of value items
  Standardize the 10 items that measure values of the respondents (see Table 1) and compute  a matrix of 34  countries x 10 items that includes in each cell the mean score of respondents  in a country on a standardized item. Next apply principal components analysis to the data matrix, and make a biplot. Discuss what you can conclude from the PCA and the biplot. 
@@ -86,7 +88,7 @@ plot(Zun[,1:2],xlim=c(-3,8),ylim=c(-3,3),xlab="PC1",ylab="PC2")
 ```
 
 
-# 2 - [Exploratory factor analysis (EFA)] 
+# [Exploratory factor analysis (EFA)] 
 
 ### Exploratory factor analysis (EFA)
 Standardize the 14 justifiability items (see Table 3) and use exploratory factor analysis to summarize the scores on the 14 items using meaningful factors. Discuss how well the selected factor model fits the data and interpret the extracted factors.
@@ -146,7 +148,7 @@ ggplot(data = zjustif_score,aes(Violence, fill=country)) +
 ```
 
 
-# 3 - [Confirmatory factor analysis (CFA)] 
+# [Confirmatory factor analysis (CFA)] 
 
 ### Confirmatory factor analysis (CFA)
 Select the data of the countries “Netherlands” and “Malaysia” and conduct confirmatory factor analysis on the covariance matrix of the justifiability items (see Table 3). Use your insights obtained with the EFA to specify a confirmatory factor analysis model in which each item is constrained to have a loading on one factor.
@@ -179,7 +181,7 @@ panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRU
 
 ```
 
-# 4 - [Structural equation model (SEM)] 
+# [Structural equation model (SEM)] 
 
 ### Structural equation model (SEM)
 Continue working on the data of the countries “Netherlands” and “Malaysia”. Estimate a structural equation model to investigate how the importance of religion affects the justifiability of behaviors for respondents. Does the result of the analysis differ for respondents of the two countries?
@@ -207,7 +209,7 @@ panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRU
 
 ```
 
-# 5 - [Canonical Correlation Analysis] 
+# [Canonical Correlation Analysis] 
 
 ### Canonical correlation analysis
 Conduct a canonical correlation analysis to investigate the relations between the following two sets of variables: 
@@ -282,7 +284,7 @@ a<- round(cbind(R2tu,VAFYbyt,redund,total=cumsum(redund)),3)
 
 
 
-# 6 - [Annexes] 
+# [Annexes] 
 
 ## Codebook
 

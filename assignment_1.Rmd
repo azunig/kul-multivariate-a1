@@ -28,6 +28,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # [Descriptive & Basis analysis] 
 
 ### Descriptive & Basis analysis
+ Here is a descriptive analysis in order to get information.
 ```{r step_1}
 load("wvs.Rdata")
 summary(wvs[,1:10])
@@ -35,8 +36,6 @@ zscore <- function(x) {
   zscore <- (x-mean(x))/sd(x)
   } 
 ```
-
-
 
 # [PCA + Biplot of value items] 
 

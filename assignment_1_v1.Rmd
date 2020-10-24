@@ -1,5 +1,5 @@
 ---
-title: "Multivariate Assignment - 1"
+title: "Multivariate Assignment - 1 v1"
 author: "Elena Ortega - Damiano Alessi - Xieru Song - Aharon V. Zúñiga."
 date: "October - 2020"
 output: 
@@ -96,9 +96,9 @@ Save the factor scores for the selected model and visualize (for each extracted 
 
 
 ```{r p2_step_1 }
-zjustif <- apply(wvs[,16:29],2,zscore) 
-cormat <- round(cor(zjustif),2)
-covmat <- round(cov(zjustif),2)
+zjustif <- apply(wvs[,16:29],2,zscore)
+cormat  <- round(cor(zjustif),2)
+covmat  <- round(cov(zjustif),2)
 
 #round(cov(wvs[,16:29]),2) when data is not stadarized, we see the differences.
 
@@ -113,8 +113,8 @@ favm_justif<-factanal(zjustif,factors=3, rotation="varimax")
 print(favm_justif, digits = 3, cutoff = 0.4, sort = TRUE)
 
 #EFA with promax rotation and 4 factors - promax oblique - allows correlation between factors
-favm_justif2 <- factanal(zjustif,factors=4, rotation="promax")
-print(favm_justif2, digits = 3, cutoff = 0.4, sort = TRUE)
+favm_justif2 <- factanal(zjustif,factors=4, rotation="varimax")
+print(favm_justif2, digits = 2, cutoff = 0.4, sort = TRUE)
 
 pjustif<-prcomp(zjustif)
 screeplot(pjustif,type="lines")

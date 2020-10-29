@@ -1,0 +1,334 @@
+---
+title: "Multivariate Assignment - 1 v1"
+author: "Elena Ortega - Damiano Alessi - Xieru Song - Aharon V. Zúñiga."
+date: "October - 2020"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+  word_document:
+    toc: yes
+editor_options:
+  chunk_output_type: console
+chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+
+library(maptools)
+library(dplyr)
+library(Matrix.utils)
+library(ggplot2)
+library(lavaan)
+library(candisc)
+library(semTools)
+library(semPlot)
+library(knitr)
+library(tables)
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+# [Descriptive & Basis analysis] 
+
+### Descriptive & Basis analysis   
+
+ Here is a descriptive analysis in order to get information.
+```{r step_1}
+load("wvs.Rdata")
+summary(wvs[,1:10])
+zscore <- function(x) {
+  zscore <- (x-mean(x))/sd(x)
+  } 
+```
+
+# 4. [Structural equation model (SEM)] 
+### Structural equation model (SEM)  
+
+Continue working on the data of the countries “Netherlands” and “Malaysia”. 
+Estimate a structural equation model to investigate how the importance of religion affects the justifiability of behaviors for respondents.
+Does the result of the analysis differ for respondents of the two countries?
+
+After filtering the countries Netherlands and Malaysia from the data, a structural equation model was conducted to this data. 
+
+```{r p4_step_0}
+
+raw_country <- wvs[wvs$country %in% c("Netherlands","Malaysia"),]
+
+
+```
+
+
+Firstly we did a model with 3 latent variables verified in previous analysis ( __Interpersonal__, __Financial__, __Violence__) and we add a fourth one called religious which one used the following manifest variables __R_attend_religious_services__, __R_pray__ and __R_importance_God__.
+
+```{r p4_step_1}
+
+#In order to make the model identifiable, loadings for the first manifest variables of each factor are constraint to 1, in that way variances of factors are estimated freely.
+#Additionally, we include three regressions in order to understand how religious variable interact with the other latent variables.
+sem1<- 'Interpersonal =~ 1*J_homosexuality+J_prostitution+J_abortion+J_divorce+J_sex_before_marriage+J_suicide
+   Financial =~ 1*J_claiming_benefits+J_avoiding_fare+J_stealing_property+J_cheating_taxes+J_accept_bribe
+   Violence =~ 1*J_beat_wife+ J_parents_beating_children+J_violence
+   Financial ~~ Violence
+   Violence =~ J_suicide
+   Violence =~ J_prostitution
+   Religious =~ 1*R_attend_religious_services + R_pray + R_importance_God
+   Interpersonal ~ Religious 
+   Financial ~ Religious 
+   Violence ~ Religious
+'
+
+```
+
+In order to attend our parameters needed, is necessary to create a structure and filter the data into it.
+```{r p4_step_2}
+
+#Creating vectors to use as a columns
+Interpersonal <- c("J_homosexuality","J_prostitution","J_abortion","J_divorce","J_sex_before_marriage","J_suicide")
+Financial <- c("J_claiming_benefits","J_avoiding_fare","J_stealing_property","J_cheating_taxes","J_accept_bribe")
+Violence  <- c("J_beat_wife", "J_parents_beating_children","J_violence")
+Religious <- c("R_attend_religious_services" , "R_pray" , "R_importance_God")
+
+#Filter data by country
+raw_country <- wvs[wvs$country %in% c("Netherlands","Malaysia"),]
+#Create dataframe
+raw_data <- apply(raw_country[,c(Interpersonal, Financial, Violence, Religious)],2,zscore)
+#Joining filter data and bulk it into a new dataframe
+raw_data_c <- cbind(raw_data,raw_country)
+
+```
+
+
+ When we use the data of both countries with the Structural Equation Model, the __CFI is 0.961__ and __TLI is 0.953__; both values are __greater than 0.95__, which means that the model has a good fit. Then __RMSEA__ obtained a __value of 0.070__, which means that is a good fit as well, because it is __lower than 0.08__.
+
+```{r p4_step_3}
+
+#Fit Structural Equation Models, using as a parameter sem1 and filtering data. Is not using a covariance matrix because it will be use a country as a column.
+fitsem1<-sem(sem1,data = raw_data_c)
+#check Summary
+summary(fitsem1, fit.measures=TRUE)
+#standardized solution
+#standardizedSolution(fitsem1)
+  
+```
+
+ With those result we can conclude that this model is reliable for analysis. Now, we will review the result for regression analysis.
+
+ The variable __religious__ has a __P value__ __lower than 0.05__ for the three regressions, this means that there is enough evidence __to reject the null hypothesis__ that the estimate is __0__. We can conclude that the religious variable has an impact into Interpersonal, Financial and Violence variables. In addition, is possible to say for two variables this impact is positive, however, for the other variable, (Interpersonal) is the opposite. 
+
+## Comparison : Netherland & Malaysia
+
+
+ To see this relationship is maintain in the same analysis for both country in a separate way, we will use the same model for each country  separately.
+
+ The results are the followings
+
+
+### Netherland
+
+
+```{r p4_step_5}
+
+#Firstly, filter data 
+fitsem_n <- sem(sem1,data = raw_data_c[raw_data_c$country %in% c("Netherlands"),])
+#Secondly, analyse summary
+summary(fitsem_n, fit.measures=TRUE)
+#standardized solution
+#standardizedSolution(fitsem_n)
+
+```
+
+For Netherlands, __the goodness of fit index CFI and TLI are not lower than critical values__, but __RMSEA__ it is. __Chi-square test is also significant__.
+Results for regressions indicate that __2 of the 3 regression are not significant__, this means that the relation between __religious and financial and violence behavior is not significant__. Only religion has an impact in __Interpersonal Justification__ behavior.
+
+Here an explanatory graph.
+
+```{r p4_step_6}
+
+semPaths(fitsem_n,"model","std","lisrel", edge.label.cex = 1.2, intercepts = FALSE, layout = "tree2",
+panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRUE, rotation = 1)
+
+
+```
+
+### Malaysia
+
+```{r p4_step_7}
+
+#Firstly, filter data 
+fitsem_m <- sem(sem1,data = raw_data_c[raw_data_c$country %in% c("Malaysia"),])
+#Secondly, analyse summary
+summary(fitsem_m, fit.measures=TRUE)
+#standardized solution
+#standardizedSolution(fitsem_n)
+
+```
+Here. in the Malaysia data, the goodness of fit index __CFI and TLI are not lower than critical values__, and __RMSEA it is in the same form__. __Chi-square test is significant__.
+Results for regressions indicate __that 3 of the 3 regression are significant__, this means that the __relation between religious and financial, violence and Interpersonal behavior is significant__. 
+
+
+Explanatory graph
+
+
+```{r p4_step_8}
+
+semPaths(fitsem_m,"model","std","lisrel", edge.label.cex = 1.2, intercepts = FALSE, layout = "tree2",
+panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRUE, rotation = 1)
+
+
+```
+
+### Conclusion
+
+Comparing the results for both countries we got a positive relation between religion with financial and violence. In this case, we are having a negative association for these relations, this means higher the religious lower the justification behavior regarding financial and violence issues.
+
+
+
+
+
+
+# 5. [Canonical Correlation Analysis] 
+
+### Canonical correlation analysis
+Conduct a canonical correlation analysis to investigate the relations between the following two sets of variables: 
+  * Set of X variables: 3 items about importance of religion __(see Table 4)__ and 5 items about occurrence of crimes in the neighborhood __(see Table 2)__.  
+  * Set of Y variables: 14 items about the justifiability of behaviors __(see Table 3)__.
+
+Conduct the analysis on standardized items using the data of the countries “Netherlands”
+and “Malaysia”.
+
+ Here the first step creating both set of variables 
+ 
+```{r 5step_1}
+
+ set_x <- c("R_attend_religious_services","R_pray","R_importance_God", "CR_robberies", "CR_alcohol", "CR_police_military", "CR_racist_behavior", "CR_drug_sale")
+  
+set_y <- c("J_avoiding_fare", "J_stealing_property", "J_cheating_taxes", "J_accept_bribe", "J_homosexuality", "J_prostitution", "J_abortion", "J_divorce", "J_sex_before_marriage", "J_suicide", "J_beat_wife", "J_parents_beating_children", "J_violence")
+
+ds <- wvs[wvs$country %in% c("Netherlands","Malaysia"),c(set_x, set_y, "country")]
+str(ds)
+ 
+#conduct canonical correlation analysis
+cancor.out1<-cancor(x = ds[,set_x], y = ds[,set_y]) 
+summary(cancor.out1)
+
+```
+
+### 1. How many canonical correlations are significant? 
+ 
+  The **H0 test** indicate that the __first five canonical__ correlations are significant because, __Pr(>F)__ is lower than significance level of __'0.05' (5%)__. This result shows that __H0__: 
+ __"The canonical correlations in the current row and all that follow are zero"__, thus can be rejected.
+
+### 2. How can you interpret the canonical variates?
+  For the current analysis there are 5significant  canonical correlations, however, three of them explain the higher amount of variance. For that reason, the first three are selected.
+  
+ __CC1 ->__ Is represented by religious beliefs on x variables and interpersonal matters on the y variables.
+    Less regiliosity more justification in sexual behavior (such as homosexuality,prostitution, abortion, divorce, sex before marriage.)
+  
+ __CC2 ->__ Is represented by ocurrency of Police or military interfere in peoples's private life on x variables and ocurrence of crimes (such as cheating_taxes & stealing_property) on y variable.
+  
+ __CC3 ->__ Is represented by ocurrency of Police or military interfere in peoples's private life & Racist behavior on x variables and ocurrence of crimes (such as violence, J_accept_bribe, J_cheating_taxes, J_stealing_property & stealing_property) on y variable.
+ 
+### 3. How much variance in the Y variables can be explained by the X variables?
+  By using just the first canonical correlation __92.84477__ percent of the variance can be explained.
+
+```{r 5step_x}
+
+#cancor.out2<-cancor(cbind(J_avoiding_fare, J_stealing_property, J_cheating_taxes, J_accept_bribe, #J_homosexuality, J_prostitution, J_abortion, J_divorce, J_sex_before_marriage, J_suicide, J_beat_wife, #J_parents_beating_children, J_violence)
+#                    ~
+#R_attend_religious_services+R_pray+R_importance_God+ CR_robberies+ CR_alcohol+ CR_police_military+ #CR_racist_behavior+ CR_drug_sale, data = ds)  
+
+#summary(cancor.out2)
+
+#print canonical loadings
+cancor.out1$structure$X.xscores
+cancor.out1$structure$Y.yscores
+
+#print redundancies
+redu<-redundancy(cancor.out1)
+round(redu$Xcan,3)
+round(redu$Ycan,3)
+
+#computation redundancies from output
+R2tu<-cancor.out1$cancor^2
+VAFYbyt<-apply(cancor.out1$structure$Y.yscores^2,2,sum)/5
+redund<-R2tu*VAFYbyt
+a<- round(cbind(R2tu,VAFYbyt,redund,total=cumsum(redund)),3)
+
+```
+
+
+
+
+# [Annexes] 
+
+## Codebook
+
+### Table 1
+
+| Column | Variable | Item |
+|-|:--|:--------|
+| 1 | V_creative | It is important to this person to think up new ideas and be creative; to do things one’s own way. |
+| 2 | V_rich | It is important to this person to be rich; to have a lot of money and expensive things. |
+| 3 | V_secure | Living in secure surroundings is important to this person; to avoid anything that might be dangerous. |
+| 4 | V_spoil_oneself | It is important to this person to have a good time;to “spoil” oneself. |
+| 5 | V_do_good | It is important to this person to do something for the good of |
+| 6 | V_be_successful | Being very successful is important to this person; to have people recognize one’s achievements. |
+| 7 | V_exciting_life | Adventure and taking risks are important to this person; to have an exciting life. |
+| 8 | V_behave_properly | It is important to this person to always behave properly; to avoid doing anything people would say is wrong. |
+| 9 | V_protect_environment | Looking after the environment is important to this person; to care for nature and save life resources. |
+| 10 | V_tradition | Tradition is important to this person; to follow the customs handed down by one’s religion or family |
+
+### Table 2
+
+| Column | Variable | Item |
+|-|:--|:--------|
+| 11 | CR_robberies | Robberies |
+| 12 | CR_alcohol | Alcohol consumption in the streets |
+| 13 | CR_police_military | Police or military interfere with people’s private life |
+| 14 | CR_racist_behavior | Racist behavior |
+| 15 | CR_drug_sale | Drug sale in streets |
+
+### Table 3
+
+| Column | Variable | Item |
+|-|:--|:--------|
+| 16 | J_claiming_benefits | Claiming government benefits to which you are not entitled |
+| 17 | J_avoiding_fare | Avoiding a fare on public transport |
+| 18 | J_stealing_property | Stealing property |
+| 19 | J_cheating_taxes | Cheating on taxes if you have a chance |
+| 20 | J_accept_bribe | Someone accepting a bribe in the course of their duties |
+| 21 | J_homosexuality | Homosexuality |
+| 22 | J_prostitution | Prostitution |
+| 23 | J_abortion | Abortion |
+| 24 | J_divorce | Divorce |
+| 25 | J_sex_before_marriage | Sex before marriage |
+| 26 | J_suicide | Suicide |
+| 27 | J_beat_wife | For a man to beat his wife |
+| 28 | J_parents_beating_children | Parents beating children |
+| 29 | J_violence | Violence against other people |
+
+
+### Table 4
+
+| Column | Variable | Item |
+|-|:--|:--------|
+| 30 | R_attend_religious_services | Apart from weddings and funerals, about how often do you attend religious services these days? 1=never, practically never,…,7=more than once a week |
+| 31 | R_pray | Apart from weddings and funerals, about how often do you pray? 1=never, practically never,…,8=more than once a week |
+| 32 | R_importance_God | How important is God in your life? 1=not at all important, …, 10=very important |
+
+
+
+## Libraries
+
+* [maptools](https://cran.r-project.org/web/packages/maptools/index.html) - maptools 
+* [dplyr](https://cran.r-project.org/web/packages/dplyr/index.html) - dplyr
+* [Matrix.utils](https://cran.r-project.org/web/packages/Matrix.utils/index.html) -  Matrix.utils
+* [ggplot2](https://cran.r-project.org/web/packages/ggplot2/index.html) -  ggplot2 
+* [lavaan](https://cran.r-project.org/web/packages/lavaan/lavaan.pdf) - lavaan
+* [candisc](https://cran.r-project.org/web/packages/candisc/index.html) - candisc
+* [semTools](https://cran.r-project.org/web/packages/semTools/index.html) - semTools
+* [semPlot](https://cran.r-project.org/web/packages/semPlot/semPlot.pdf) - semPlot
+* [knitr](https://cran.r-project.org/web/packages/knitr/index.html) - knitr
+* [tables](https://cran.r-project.org/web/packages/tables/vignettes/tables.pdf) - tables
+

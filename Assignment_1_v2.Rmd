@@ -34,13 +34,16 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Descriptive & Basis analysis   
 
- Here is a descriptive analysis in order to get information.
+Data from wvs.R file contain 33 variables and 32684 observations. All of them are numeric with exception of country variable that is a factor.
+ 
 ```{r step_1}
+print("a")
 load("wvs.Rdata")
-summary(wvs[,1:10])
+str(wvs)
 zscore <- function(x) {
   zscore <- (x-mean(x))/sd(x)
-  } 
+} 
+
 ```
 
 # 4. [Structural equation model (SEM)] 
@@ -50,37 +53,39 @@ Continue working on the data of the countries “Netherlands” and “Malaysia�
 Estimate a structural equation model to investigate how the importance of religion affects the justifiability of behaviors for respondents.
 Does the result of the analysis differ for respondents of the two countries?
 
-After filtering the countries Netherlands and Malaysia from the data, a structural equation model was conducted to this data. 
+After filtering the countries Netherlands and Malaysia from the data, a structural equation model was conducted.   
 
 ```{r p4_step_0}
-
+#Filter data by country
 raw_country <- wvs[wvs$country %in% c("Netherlands","Malaysia"),]
-
 
 ```
 
+Firstly, a model with 3 latent variables verified from the previous analysis ( **Interpersonal**,**Financial**, **Violence**) was used as measurement model of justifiability behaviours, a fourth latent variable called **religious belief** which one used the following manifest variables __R_attend_religious_services__, __R_pray__ and __R_importance_God__.
 
-Firstly we did a model with 3 latent variables verified in previous analysis ( __Interpersonal__, __Financial__, __Violence__) and we add a fourth one called religious which one used the following manifest variables __R_attend_religious_services__, __R_pray__ and __R_importance_God__.
 
 ```{r p4_step_1}
 
 #In order to make the model identifiable, loadings for the first manifest variables of each factor are constraint to 1, in that way variances of factors are estimated freely.
-#Additionally, we include three regressions in order to understand how religious variable interact with the other latent variables.
-sem1<- 'Interpersonal =~ 1*J_homosexuality+J_prostitution+J_abortion+J_divorce+J_sex_before_marriage+J_suicide
-   Financial =~ 1*J_claiming_benefits+J_avoiding_fare+J_stealing_property+J_cheating_taxes+J_accept_bribe
-   Violence =~ 1*J_beat_wife+ J_parents_beating_children+J_violence
-   Financial ~~ Violence
-   Violence =~ J_suicide
-   Violence =~ J_prostitution
-   Religious =~ 1*R_attend_religious_services + R_pray + R_importance_God
-   Interpersonal ~ Religious 
-   Financial ~ Religious 
-   Violence ~ Religious
+#Additionally, we include three regressions in order to understand how the latent variable religious interact with the other latent variables.
+
+         #Violence =~ J_suicide  it was not included as the relation with the latent variable is low see std.lv 0.229
+         #Violence =~ J_prostitution it was not be included as the relation with the latent variable is low see std.lv 0.157
+
+sem1<- ' Interpersonal =~ 1*J_homosexuality+J_prostitution+J_abortion+J_divorce+J_sex_before_marriage+J_suicide
+         Financial =~ 1*J_claiming_benefits+J_avoiding_fare+J_stealing_property+J_cheating_taxes+J_accept_bribe
+         Violence =~ 1*J_beat_wife+ J_parents_beating_children+J_violence
+         Financial ~~ Violence
+         Religious =~ 1*R_attend_religious_services + R_pray + R_importance_God
+         Interpersonal ~ Religious 
+         Financial ~ Religious 
+         Violence ~ Religious
 '
 
 ```
 
-In order to attend our parameters needed, is necessary to create a structure and filter the data into it.
+In order to attend the model needed, is necessary to select the variables to use
+
 ```{r p4_step_2}
 
 #Creating vectors to use as a columns
@@ -89,65 +94,68 @@ Financial <- c("J_claiming_benefits","J_avoiding_fare","J_stealing_property","J_
 Violence  <- c("J_beat_wife", "J_parents_beating_children","J_violence")
 Religious <- c("R_attend_religious_services" , "R_pray" , "R_importance_God")
 
-#Filter data by country
-raw_country <- wvs[wvs$country %in% c("Netherlands","Malaysia"),]
-#Create dataframe
+
+#Create dataframe with standardized variables 
 raw_data <- apply(raw_country[,c(Interpersonal, Financial, Violence, Religious)],2,zscore)
-#Joining filter data and bulk it into a new dataframe
-raw_data_c <- cbind(raw_data,raw_country)
+#Joining country to standardized data and bulk it into a new dataframe "raw_data_c"
+raw_data_c <- cbind(data.frame(raw_data),country = raw_country$country)
 
 ```
 
-
- When we use the data of both countries with the Structural Equation Model, the __CFI is 0.961__ and __TLI is 0.953__; both values are __greater than 0.95__, which means that the model has a good fit. Then __RMSEA__ obtained a __value of 0.070__, which means that is a good fit as well, because it is __lower than 0.08__.
+ When we use the data of both countries in the Structural Equation Model, the __CFI is 0.961__ and __TLI is 0.953__; both values are __greater than 0.95__, which means that the model has a good fit. Then __RMSEA__ obtained a __value of 0.070__, which means that is a good fit as well, because it is __lower than 0.08__.
 
 ```{r p4_step_3}
 
 #Fit Structural Equation Models, using as a parameter sem1 and filtering data. Is not using a covariance matrix because it will be use a country as a column.
-fitsem1<-sem(sem1,data = raw_data_c)
-#check Summary
-summary(fitsem1, fit.measures=TRUE)
-#standardized solution
-#standardizedSolution(fitsem1)
-  
+fitsem1<-sem(sem1, data = raw_data_c)
+#check goodness of fit
+fitmeasures(fitsem1, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr"))
+
 ```
 
- With those result we can conclude that this model is reliable for analysis. Now, we will review the result for regression analysis.
+ With those result we can conclude that this model is reliable for analysis, this means that not only that the latent variables can be created usign the manifest variables but also that the regression model has a good fit. Now, we will review the result for regression analysis.
+ 
+ Accordingly to the previous analysis, the manifest variables has high estimates for each corresponding latent variable, with standardized values from 0.687 the lowest and 0.921 the highest. SAme results are obtained for the new latent variable religious, with standardized values going from 0.81 to 0.911.  
 
- The variable __religious__ has a __P value__ __lower than 0.05__ for the three regressions, this means that there is enough evidence __to reject the null hypothesis__ that the estimate is __0__. We can conclude that the religious variable has an impact into Interpersonal, Financial and Violence variables. In addition, is possible to say for two variables this impact is positive, however, for the other variable, (Interpersonal) is the opposite. 
+Accordingly to the regression results, the latent variable __religious__ has a P-value __lower than 0.05__ for the three regressions, this means that there is enough evidence __to reject the null hypothesis__ that the estimate is __0__. With this, can be concluded that the religious variable has an impact into Interpersonal, Financial and Violence justifiability behaviours variables. In addition, is possible to say for two variables this impact is positive, however, for the other variable, (Interpersonal) is the opposite. This can mean that higher the level of religious in a person, lower the justification of behaviours regarding Interpersonal relations. Contrary, higher the level of religiousness higher the justification of behaviours regarding Financial and Violence conflicts. 
+
+```{r p4_step_4}
+summary(fitsem1, standardized=TRUE)
+
+semPaths(fitsem1,"model","std","lisrel", edge.label.cex = 1.2, intercepts = FALSE, layout = "tree2",
+panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRUE, rotation = 1)
+
+```
 
 ## Comparison : Netherland & Malaysia
 
 
- To see this relationship is maintain in the same analysis for both country in a separate way, we will use the same model for each country  separately.
-
- The results are the followings
+To see if this relationship is maintained applying the same analysis for each country in a separate way, we will use the same model for each country  separately. The results are the followings.
 
 
 ### Netherland
 
 
+For Netherlands, __the goodness of fit index CFI and TLI are not higher than critical values__, but __RMSEA__ is in acceptable level. __Chi-square test is also significant__.
+
 ```{r p4_step_5}
 
-#Firstly, filter data 
+#Firstly, filter data of Netherlands
 fitsem_n <- sem(sem1,data = raw_data_c[raw_data_c$country %in% c("Netherlands"),])
 #Secondly, analyse summary
-summary(fitsem_n, fit.measures=TRUE)
-#standardized solution
-#standardizedSolution(fitsem_n)
+fitmeasures(fitsem_n, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr"))
+
 
 ```
 
-For Netherlands, __the goodness of fit index CFI and TLI are not lower than critical values__, but __RMSEA__ it is. __Chi-square test is also significant__.
-Results for regressions indicate that __2 of the 3 regression are not significant__, this means that the relation between __religious and financial and violence behavior is not significant__. Only religion has an impact in __Interpersonal Justification__ behavior.
-
-Here an explanatory graph.
+Results for regressions indicate that __2 of the 3 regression are not significant__ at 0.05 level, this means that the relation between __religious and financial and violence behaviour is not significant__. Only religion has an impact in __Interpersonal Justification__ behavior, with negative value as in the global model. 
 
 ```{r p4_step_6}
+summary(fitsem_n, standardized=TRUE)
 
 semPaths(fitsem_n,"model","std","lisrel", edge.label.cex = 1.2, intercepts = FALSE, layout = "tree2",
 panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRUE, rotation = 1)
-
+title("Netherlands")
 
 ```
 
@@ -156,108 +164,134 @@ panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRU
 ```{r p4_step_7}
 
 #Firstly, filter data 
-fitsem_m <- sem(sem1,data = raw_data_c[raw_data_c$country %in% c("Malaysia"),])
-#Secondly, analyse summary
-summary(fitsem_m, fit.measures=TRUE)
-#standardized solution
-#standardizedSolution(fitsem_n)
+fitsem_m <- sem(sem1, data = raw_data_c[raw_data_c$country %in% c("Malaysia"),])
+fitmeasures(fitsem_m, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr"))
 
 ```
-Here. in the Malaysia data, the goodness of fit index __CFI and TLI are not lower than critical values__, and __RMSEA it is in the same form__. __Chi-square test is significant__.
-Results for regressions indicate __that 3 of the 3 regression are significant__, this means that the __relation between religious and financial, violence and Interpersonal behavior is significant__. 
+Here. in the Malaysia data, the goodness of fit index __CFI and TLI are not higher than critical values__, and __RMSEA it is in the same form__. __Chi-square test is significant__. This means that the measurement model doesn't have a good fit in this data.  
 
-
-Explanatory graph
+Even thought the manifest variables do not show higher relations with each latent variables, the results for the regressions indicate __that 3 of the 3 regression are significant__, but all of them has a negative impact in the dependant variable, this means that the __relation between religious and financial, violence and Interpersonal behavior is nehgatively related__.  
 
 
 ```{r p4_step_8}
+summary(fitsem_m, standardized=TRUE)
 
 semPaths(fitsem_m,"model","std","lisrel", edge.label.cex = 1.2, intercepts = FALSE, layout = "tree2",
 panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRUE, rotation = 1)
-
+title("Malaysia")
 
 ```
 
 ### Conclusion
 
-Comparing the results for both countries we got a positive relation between religion with financial and violence. In this case, we are having a negative association for these relations, this means higher the religious lower the justification behavior regarding financial and violence issues.
-
-
-
+Comparing the results in the global model with both countries, a positive relation between religion with financial and violence. 
+In the case of Interpersonal issues, a negative association was found. This change dramatically when analysing the data separately for each country, where in Malaysia all the relationships are negative this means higher the religious lower the justification behaviour regarding financial and violence issues.
 
 
 
 # 5. [Canonical Correlation Analysis] 
 
-### Canonical correlation analysis
+### Canonical correlation analysis  
+
 Conduct a canonical correlation analysis to investigate the relations between the following two sets of variables: 
   * Set of X variables: 3 items about importance of religion __(see Table 4)__ and 5 items about occurrence of crimes in the neighborhood __(see Table 2)__.  
   * Set of Y variables: 14 items about the justifiability of behaviors __(see Table 3)__.
 
-Conduct the analysis on standardized items using the data of the countries “Netherlands”
-and “Malaysia”.
+Conduct the analysis on standardized items using the data of the countries “Netherlands” and “Malaysia”.
 
- Here the first step creating both set of variables 
- 
 ```{r 5step_1}
 
- set_x <- c("R_attend_religious_services","R_pray","R_importance_God", "CR_robberies", "CR_alcohol", "CR_police_military", "CR_racist_behavior", "CR_drug_sale")
+#Creating both sets of variables  
+set_x <- c("R_attend_religious_services","R_pray","R_importance_God", "CR_robberies", "CR_alcohol", "CR_police_military", "CR_racist_behavior", "CR_drug_sale")
   
-set_y <- c("J_avoiding_fare", "J_stealing_property", "J_cheating_taxes", "J_accept_bribe", "J_homosexuality", "J_prostitution", "J_abortion", "J_divorce", "J_sex_before_marriage", "J_suicide", "J_beat_wife", "J_parents_beating_children", "J_violence")
+set_y <- c("J_claiming_benefits", "J_avoiding_fare", "J_stealing_property", "J_cheating_taxes", "J_accept_bribe", "J_homosexuality", "J_prostitution", "J_abortion", "J_divorce", "J_sex_before_marriage", "J_suicide", "J_beat_wife", "J_parents_beating_children", "J_violence")
 
 ds <- wvs[wvs$country %in% c("Netherlands","Malaysia"),c(set_x, set_y, "country")]
-str(ds)
- 
-#conduct canonical correlation analysis
-cancor.out1<-cancor(x = ds[,set_x], y = ds[,set_y]) 
-summary(cancor.out1)
 
+#str(ds)
 ```
-
-### 1. How many canonical correlations are significant? 
  
-  The **H0 test** indicate that the __first five canonical__ correlations are significant because, __Pr(>F)__ is lower than significance level of __'0.05' (5%)__. This result shows that __H0__: 
- __"The canonical correlations in the current row and all that follow are zero"__, thus can be rejected.
-
-### 2. How can you interpret the canonical variates?
-  For the current analysis there are 5significant  canonical correlations, however, three of them explain the higher amount of variance. For that reason, the first three are selected.
-  
- __CC1 ->__ Is represented by religious beliefs on x variables and interpersonal matters on the y variables.
-    Less regiliosity more justification in sexual behavior (such as homosexuality,prostitution, abortion, divorce, sex before marriage.)
-  
- __CC2 ->__ Is represented by ocurrency of Police or military interfere in peoples's private life on x variables and ocurrence of crimes (such as cheating_taxes & stealing_property) on y variable.
-  
- __CC3 ->__ Is represented by ocurrency of Police or military interfere in peoples's private life & Racist behavior on x variables and ocurrence of crimes (such as violence, J_accept_bribe, J_cheating_taxes, J_stealing_property & stealing_property) on y variable.
  
-### 3. How much variance in the Y variables can be explained by the X variables?
-  By using just the first canonical correlation __92.84477__ percent of the variance can be explained.
-
-```{r 5step_x}
-
-#cancor.out2<-cancor(cbind(J_avoiding_fare, J_stealing_property, J_cheating_taxes, J_accept_bribe, #J_homosexuality, J_prostitution, J_abortion, J_divorce, J_sex_before_marriage, J_suicide, J_beat_wife, #J_parents_beating_children, J_violence)
-#                    ~
-#R_attend_religious_services+R_pray+R_importance_God+ CR_robberies+ CR_alcohol+ CR_police_military+ #CR_racist_behavior+ CR_drug_sale, data = ds)  
-
-#summary(cancor.out2)
-
-#print canonical loadings
+```{r 5step_2}
+#conduct canonical correlation analysis
+cancor.out1 <- cancor(x = ds[,set_x], y = ds[,set_y], xcenter = TRUE, ycenter = TRUE) 
+summary(cancor.out1)
 cancor.out1$structure$X.xscores
 cancor.out1$structure$Y.yscores
 
-#print redundancies
-redu<-redundancy(cancor.out1)
-round(redu$Xcan,3)
-round(redu$Ycan,3)
-
-#computation redundancies from output
-R2tu<-cancor.out1$cancor^2
-VAFYbyt<-apply(cancor.out1$structure$Y.yscores^2,2,sum)/5
-redund<-R2tu*VAFYbyt
-a<- round(cbind(R2tu,VAFYbyt,redund,total=cumsum(redund)),3)
+cancor.out1$structure$X.yscores
+cancor.out1$structure$Y.xscores
+plot(cancor.out1)
 
 ```
 
+**1. How many canonical correlations are significant?**  
+ 
+The **H0 test** indicate that the __first five canonical__ correlations are significant because, __Pr(>F)__ is lower than significance level of __'0.05' (5%)__. This result shows that __H0 : "The canonical correlations in the current row and all that follow are zero"__ can be rejected.
 
+**2. How can you interpret the canonical variates?**  
+
+For the current analysis there are 5 significant canonical correlations, however, three of them explain the higher amount of variance. For that reason, the first three are selected to be interpreted.
+  
+ __CC1 ->__ Is represented by religious beliefs on x variables and interpersonal matters on the y variables.
+    Less religiosity more justification in sexual behaviour (such as homosexuality,prostitution, abortion, divorce, sex before marriage.)
+
+ 
+**3. How much variance in the Y variables can be explained by the X variables?**  
+
+By using just the first canonical correlation __92.84477__ percent of the variance can be explained, this is clear as the eigenvalue for this correlation is higher than 1.    
+
+```{r 5step_x}
+
+print(redundancy(cancor.out1))
+
+```
+
+```{r 5step_x}
+
+#split data in two parts and standardize data
+train<-ds[seq(2,nrow(ds),by=2),]
+valid<-ds[seq(1,nrow(ds),by=2),]
+train[,2:11]<-scale(train[,2:11],center=TRUE,scale=TRUE)
+valid[,2:11]<-scale(valid[,2:11],center=TRUE,scale=TRUE)
+
+#conduct CCA on calibration data
+cancor.train<-cancor(cbind(J_claiming_benefits, J_avoiding_fare, J_stealing_property, J_cheating_taxes, J_accept_bribe, J_homosexuality, J_prostitution, J_abortion, J_divorce, J_sex_before_marriage, J_suicide, J_beat_wife, J_parents_beating_children, J_violence)
+~R_attend_religious_services + R_pray + R_importance_God + CR_robberies + CR_alcohol + CR_police_military + CR_racist_behavior + CR_drug_sale,data=train)
+summary(cancor.train)
+cancor.train$structure$X.xscores
+cancor.train$structure$Y.yscores
+
+#conduct CCA on validation data
+cancor.valid<-cancor(cbind(J_claiming_benefits, J_avoiding_fare, J_stealing_property, J_cheating_taxes, J_accept_bribe, J_homosexuality, J_prostitution, J_abortion, J_divorce, J_sex_before_marriage, J_suicide, J_beat_wife, J_parents_beating_children, J_violence)
+~ R_attend_religious_services + R_pray + R_importance_God + CR_robberies + CR_alcohol + CR_police_military + CR_racist_behavior + CR_drug_sale,data=valid)
+summary(cancor.valid)
+cancor.valid$structure$X.xscores
+cancor.valid$structure$Y.yscores
+
+
+# canonical variates calibration set
+train.X1<-cancor.train$score$X
+train.Y1<-cancor.train$score$Y
+
+# compute canonical variates using data of calibration set and coefficients estimated on validation set
+train.X2<-as.matrix(train[,2:6])%*%cancor.valid$coef$X
+train.Y2<-as.matrix(train[,7:11])%*%cancor.valid$coef$Y
+
+
+
+#R(T,T*) and R(U,U*)
+round(cor(train.Y1,train.Y2)[1:3,1:3],3)
+round(cor(train.X1,train.X2)[1:3,1:3],3)
+#R(U*,T*) versus R(U,T)
+round(cor(train.X1,train.Y1)[1:3,1:3],3)
+round(cor(train.X2,train.Y2)[1:3,1:3],3)
+#R(T*,T*) and R(U*,U*)
+round(cor(train.Y2,train.Y2)[1:3,1:3],3)
+round(cor(train.X2,train.X2)[1:3,1:3],3)
+
+
+```
 
 
 # [Annexes] 

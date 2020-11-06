@@ -2,16 +2,20 @@
 title: "Multivariate Assignment - 1 v1"
 author: "Elena Ortega - Damiano Alessi - Xieru Song - Aharon V. Zúñiga."
 date: "October - 2020"
-output: 
+output:
   html_document:
-    toc: TRUE
-    toc_float: TRUE
-editor_options: 
+    toc: yes
+    toc_float: yes
+  word_document:
+    toc: yes
+editor_options:
+  chunk_output_type: console
 chunk_output_type: console
 ---
 
 
 ```{r setup, include=FALSE}
+
 library(maptools)
 library(dplyr)
 library(Matrix.utils)
@@ -23,11 +27,13 @@ library(semPlot)
 library(knitr)
 library(tables)
 knitr::opts_chunk$set(echo = TRUE)
+
 ```
 
 # [Descriptive & Basis analysis] 
 
-### Descriptive & Basis analysis
+### Descriptive & Basis analysis   
+
  Here is a descriptive analysis in order to get information.
 ```{r step_1}
 load("wvs.Rdata")
@@ -37,178 +43,151 @@ zscore <- function(x) {
   } 
 ```
 
-# [PCA + Biplot of value items] 
+# 4. [Structural equation model (SEM)] 
+### Structural equation model (SEM)  
 
-### PCA + Biplot of value items
- Standardize the 10 items that measure values of the respondents (see Table 1) and compute  a matrix of 34  countries x 10 items that includes in each cell the mean score of respondents  in a country on a standardized item. Next apply principal components analysis to the data matrix, and make a biplot. Discuss what you can conclude from the PCA and the biplot. 
- 
-```{r p1_step_1}
-#### Decision, the first component will have the maximun variance of the raw data.  here explanation  (empirical analysis)
-zgspraw <- apply(wvs[,1:10],2,zscore) 
-zgspraw <- cbind(zgspraw,country=wvs$country)
-summary(zgspraw)
-```
+Continue working on the data of the countries “Netherlands” and “Malaysia”. 
+Estimate a structural equation model to investigate how the importance of religion affects the justifiability of behaviors for respondents.
+Does the result of the analysis differ for respondents of the two countries?
 
-```{r p1_step_2}
+After filtering the countries Netherlands and Malaysia from the data, a structural equation model was conducted to this data. 
 
-av <- mean(zgspraw[,1])
-c<-aggregate.Matrix(zgspraw, groupings = zgspraw[,'country',drop=FALSE],fun='mean')
-c <-as.matrix(c)
+```{r p4_step_0}
 
-```
+raw_country <- wvs[wvs$country %in% c("Netherlands","Malaysia"),]
 
-```{r p1_step_3}
-
-pcaraw <-prcomp(c[,1:10]) 
-attributes(pcaraw)
-#variance
-round(pcaraw$sdev^2,2)
-# proportion of explained variance per component ****
-round(pcaraw$sdev^2/10,5)
-
-# compute component loadings #pcaraw$rotation
-A<-pcaraw$rotation%*%diag(pcaraw$sdev) #%*% multiplication matrix
-
-#loading multiplied by variance of each variable
-plot(A[,1:2],xlab="PC1",ylab="PC2")
-
-pointLabel(A[,1],A[,2],names(wvs[,1:10]),
-   cex=1) 
-
-####
-# compute unstandardized component scores
-Zun<-zgspraw[,1:10]%*%pcaraw$rotation[,1:10]
-# compute standardized component scores
-Zs<-zgspraw[,1:10]%*%pcaraw$rotation[,1:10]%*%diag(1/pcaraw$sdev[1:10])
-# plot component scores for first 2 unstandardized components
-plot(Zun[,1:2],xlim=c(-3,8),ylim=c(-3,3),xlab="PC1",ylab="PC2")
-#pointLabel(Zun[,1],Zun[,2],wvs[,10],cex=0.9) 
 
 ```
 
 
-# [Exploratory factor analysis (EFA)] 
+Firstly we did a model with 3 latent variables verified in previous analysis ( __Interpersonal__, __Financial__, __Violence__) and we add a fourth one called religious which one used the following manifest variables __R_attend_religious_services__, __R_pray__ and __R_importance_God__.
 
-### Exploratory factor analysis (EFA)
-Standardize the 14 justifiability items (see Table 3) and use exploratory factor analysis to summarize the scores on the 14 items using meaningful factors. Discuss how well the selected factor model fits the data and interpret the extracted factors.
-Save the factor scores for the selected model and visualize (for each extracted factor) the distribution of the factor scores for the 34 countries. Discuss what you can conclude from these graphs.
+```{r p4_step_1}
 
-
-
-```{r p2_step_1 }
-zjustif <- apply(wvs[,16:29],2,zscore)
-cormat  <- round(cor(zjustif),2)
-covmat  <- round(cov(zjustif),2)
-
-#round(cov(wvs[,16:29]),2) when data is not stadarized, we see the differences.
-
-## estimate EFA with xxx common factors
-## The factanal() function runs EFA on the correlation matrix
-fa_justif <-factanal(zjustif, factors=7, rotation="none")
-fa_justif
-
-
-#EFA with varimax rotation and 3 factors - varimax orthogonal - prohibited cor.
-favm_justif<-factanal(zjustif,factors=3, rotation="varimax")
-print(favm_justif, digits = 3, cutoff = 0.4, sort = TRUE)
-
-#EFA with promax rotation and 4 factors - promax oblique - allows correlation between factors
-favm_justif2 <- factanal(zjustif,factors=4, rotation="varimax")
-print(favm_justif2, digits = 2, cutoff = 0.4, sort = TRUE)
-
-pjustif<-prcomp(zjustif)
-screeplot(pjustif,type="lines")
-
-## score -- I choose towards to find a explanation in 3 areas. Financial issues
-## interpersonal issues and Violence. 
-favm_justif<-factanal(zjustif,factors=3, rotation="varimax",scores="regression")
-print(favm_justif, digits = 3, cutoff = 0.5, sort = TRUE)
-scores <- favm_justif$scores
-colnames(scores)<-c("Interpersonal","Financial", "Violence")
-zjustif_score <- data.frame(zjustif,scores,country=wvs$country)
-
-ggplot(data = zjustif_score,aes(Interpersonal, fill=country)) +
-  geom_density()  + 
- facet_wrap(~country) + theme(legend.position = "none") +
-  ggtitle("Factor 1 - Interpersonal Justification")
-  
-ggplot(data = zjustif_score,aes(Financial, fill=country)) +
-  geom_density()  + 
- facet_wrap(~country) + theme(legend.position = "none") +
-  ggtitle("Factor 2 - Financial Justification")
-
-ggplot(data = zjustif_score,aes(Violence, fill=country)) +
-  geom_density()  + 
- facet_wrap(~country) + theme(legend.position = "none") +
-  ggtitle("Factor 3 - Violence Justification")
-
-##### standarise.
-
-```
-
-
-# [Confirmatory factor analysis (CFA)] 
-
-### Confirmatory factor analysis (CFA)
-Select the data of the countries “Netherlands” and “Malaysia” and conduct confirmatory factor analysis on the covariance matrix of the justifiability items (see Table 3). Use your insights obtained with the EFA to specify a confirmatory factor analysis model in which each item is constrained to have a loading on one factor.
-Check the fit of the CFA model, and use modification indices to see whether you can adapt the model (in a number of steps) to obtain a parsimonious model with acceptable fit. Discuss the results of the selected CFA model (e.g., fit measures, (standardized) loadings, reliability of the factor scores, factor correlations, etc.).
-Conduct a multi-group analysis to assess to what extent there is measurement invariance across the two countries and discuss the results.
-
-```{r p3_step_1}
-#pas <- wvs[wvs$country %in% c("Netherlands","Malaysia"),]
-#tail(pas)
-zjustif_cfa <- apply(wvs[wvs$country %in% c("Netherlands","Malaysia"),16:29],2,zscore)
-covmat_cfa <- cov(zjustif_cfa) #no round to get more detailed data
-
-cfa3 <- 'Interpersonal =~ 1*J_homosexuality+J_prostitution+J_abortion+J_divorce+J_sex_before_marriage+J_suicide
+#In order to make the model identifiable, loadings for the first manifest variables of each factor are constraint to 1, in that way variances of factors are estimated freely.
+#Additionally, we include three regressions in order to understand how religious variable interact with the other latent variables.
+sem1<- 'Interpersonal =~ 1*J_homosexuality+J_prostitution+J_abortion+J_divorce+J_sex_before_marriage+J_suicide
    Financial =~ 1*J_claiming_benefits+J_avoiding_fare+J_stealing_property+J_cheating_taxes+J_accept_bribe
    Violence =~ 1*J_beat_wife+ J_parents_beating_children+J_violence
    Financial ~~ Violence
    Violence =~ J_suicide
-   Violence =~ J_prostitution'
+   Violence =~ J_prostitution
+   Religious =~ 1*R_attend_religious_services + R_pray + R_importance_God
+   Interpersonal ~ Religious 
+   Financial ~ Religious 
+   Violence ~ Religious
+'
 
-fitcfa3 <- cfa(cfa3, sample.cov = covmat_cfa, sample.nobs = 2473)
+```
 
-summary(fitcfa3, fit.measures=TRUE)
-standardizedSolution(fitcfa3)
-modificationIndices(fitcfa3, minimum.value = 10, sort = TRUE)
+In order to attend our parameters needed, is necessary to create a structure and filter the data into it.
+```{r p4_step_2}
+
+#Creating vectors to use as a columns
+Interpersonal <- c("J_homosexuality","J_prostitution","J_abortion","J_divorce","J_sex_before_marriage","J_suicide")
+Financial <- c("J_claiming_benefits","J_avoiding_fare","J_stealing_property","J_cheating_taxes","J_accept_bribe")
+Violence  <- c("J_beat_wife", "J_parents_beating_children","J_violence")
+Religious <- c("R_attend_religious_services" , "R_pray" , "R_importance_God")
+
+#Filter data by country
+raw_country <- wvs[wvs$country %in% c("Netherlands","Malaysia"),]
+#Create dataframe
+raw_data <- apply(raw_country[,c(Interpersonal, Financial, Violence, Religious)],2,zscore)
+#Joining filter data and bulk it into a new dataframe
+raw_data_c <- cbind(raw_data,raw_country)
+
+```
 
 
-semPaths(fitcfa3,"model","std","lisrel", edge.label.cex = 1.2, intercepts = FALSE, layout = "tree2",
+ When we use the data of both countries with the Structural Equation Model, the __CFI is 0.961__ and __TLI is 0.953__; both values are __greater than 0.95__, which means that the model has a good fit. Then __RMSEA__ obtained a __value of 0.070__, which means that is a good fit as well, because it is __lower than 0.08__.
+
+```{r p4_step_3}
+
+#Fit Structural Equation Models, using as a parameter sem1 and filtering data. Is not using a covariance matrix because it will be use a country as a column.
+fitsem1<-sem(sem1,data = raw_data_c)
+#check Summary
+summary(fitsem1, fit.measures=TRUE)
+#standardized solution
+#standardizedSolution(fitsem1)
+  
+```
+
+ With those result we can conclude that this model is reliable for analysis. Now, we will review the result for regression analysis.
+
+ The variable __religious__ has a __P value__ __lower than 0.05__ for the three regressions, this means that there is enough evidence __to reject the null hypothesis__ that the estimate is __0__. We can conclude that the religious variable has an impact into Interpersonal, Financial and Violence variables. In addition, is possible to say for two variables this impact is positive, however, for the other variable, (Interpersonal) is the opposite. 
+
+## Comparison : Netherland & Malaysia
+
+
+ To see this relationship is maintain in the same analysis for both country in a separate way, we will use the same model for each country  separately.
+
+ The results are the followings
+
+
+### Netherland
+
+
+```{r p4_step_5}
+
+#Firstly, filter data 
+fitsem_n <- sem(sem1,data = raw_data_c[raw_data_c$country %in% c("Netherlands"),])
+#Secondly, analyse summary
+summary(fitsem_n, fit.measures=TRUE)
+#standardized solution
+#standardizedSolution(fitsem_n)
+
+```
+
+For Netherlands, __the goodness of fit index CFI and TLI are not lower than critical values__, but __RMSEA__ it is. __Chi-square test is also significant__.
+Results for regressions indicate that __2 of the 3 regression are not significant__, this means that the relation between __religious and financial and violence behavior is not significant__. Only religion has an impact in __Interpersonal Justification__ behavior.
+
+Here an explanatory graph.
+
+```{r p4_step_6}
+
+semPaths(fitsem_n,"model","std","lisrel", edge.label.cex = 1.2, intercepts = FALSE, layout = "tree2",
 panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRUE, rotation = 1)
 
 
 ```
 
-# [Structural equation model (SEM)] 
+### Malaysia
 
-### Structural equation model (SEM)
-Continue working on the data of the countries “Netherlands” and “Malaysia”. Estimate a structural equation model to investigate how the importance of religion affects the justifiability of behaviors for respondents. Does the result of the analysis differ for respondents of the two countries?
+```{r p4_step_7}
 
-```{r p4_step_1}
-#pas <- wvs[wvs$country %in% c("Netherlands","Malaysia"),]
-#tail(pas)
-zjustif_cfa <- apply(wvs[wvs$country %in% c("Netherlands","Malaysia"),16:29],2,zscore)
-covmat_cfa <- cov(zjustif_cfa) #no round to get more detailed data
+#Firstly, filter data 
+fitsem_m <- sem(sem1,data = raw_data_c[raw_data_c$country %in% c("Malaysia"),])
+#Secondly, analyse summary
+summary(fitsem_m, fit.measures=TRUE)
+#standardized solution
+#standardizedSolution(fitsem_n)
 
-cfa3 <- 'Interpersonal =~ 1*J_homosexuality+J_prostitution+J_abortion+J_divorce+J_sex_before_marriage+J_suicide
-   Financial =~ 1*J_claiming_benefits+J_avoiding_fare+J_stealing_property+J_cheating_taxes+J_accept_bribe
-   Violence =~ 1*J_beat_wife+ J_parents_beating_children+J_violence'
-
-fitcfa3 <- cfa(cfa3, sample.cov = covmat_cfa, sample.nobs = 2473)
-
-summary(fitcfa3, fit.measures=TRUE)
-standardizedSolution(fitcfa3)
-modificationIndices(fitcfa3, minimum.value = 10, sort = TRUE)
+```
+Here. in the Malaysia data, the goodness of fit index __CFI and TLI are not lower than critical values__, and __RMSEA it is in the same form__. __Chi-square test is significant__.
+Results for regressions indicate __that 3 of the 3 regression are significant__, this means that the __relation between religious and financial, violence and Interpersonal behavior is significant__. 
 
 
-semPaths(fitcfa3,"model","std","lisrel", edge.label.cex = 1.2, intercepts = FALSE, layout = "tree2",
+Explanatory graph
+
+
+```{r p4_step_8}
+
+semPaths(fitsem_m,"model","std","lisrel", edge.label.cex = 1.2, intercepts = FALSE, layout = "tree2",
 panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRUE, rotation = 1)
 
 
 ```
 
-# [Canonical Correlation Analysis] 
+### Conclusion
+
+Comparing the results for both countries we got a positive relation between religion with financial and violence. In this case, we are having a negative association for these relations, this means higher the religious lower the justification behavior regarding financial and violence issues.
+
+
+
+
+
+
+# 5. [Canonical Correlation Analysis] 
 
 ### Canonical correlation analysis
 Conduct a canonical correlation analysis to investigate the relations between the following two sets of variables: 
@@ -221,6 +200,7 @@ and “Malaysia”.
  Here the first step creating both set of variables 
  
 ```{r 5step_1}
+
  set_x <- c("R_attend_religious_services","R_pray","R_importance_God", "CR_robberies", "CR_alcohol", "CR_police_military", "CR_racist_behavior", "CR_drug_sale")
   
 set_y <- c("J_avoiding_fare", "J_stealing_property", "J_cheating_taxes", "J_accept_bribe", "J_homosexuality", "J_prostitution", "J_abortion", "J_divorce", "J_sex_before_marriage", "J_suicide", "J_beat_wife", "J_parents_beating_children", "J_violence")
@@ -276,6 +256,7 @@ redund<-R2tu*VAFYbyt
 a<- round(cbind(R2tu,VAFYbyt,redund,total=cumsum(redund)),3)
 
 ```
+
 
 
 
@@ -338,7 +319,18 @@ a<- round(cbind(R2tu,VAFYbyt,redund,total=cumsum(redund)),3)
 
 
 
-
+# The results of the analysis show that
+#  The correlation matrix can be fitted well by the model ( 2 .263, df=1,
+# p=.608).
+#  Self-esteem and job satisfaction have rather weak reliability as all of the
+# squared standardized loadings are lower than 0.70. The reliabilities of X1
+# and X2 equal .59 and .51, and the reliabilities of Y1 and Y2 equal .63 and
+# .67.
+#  Self-esteem has a significant positive effect on job satisfaction. The
+# estimated correlation between  and  equals .471.
+#  Note: in this example we have var ( ) .623   and ˆ  .372 so that
+#   2 2
+# var var ( ) ( ) .485
 
 
 ## Libraries

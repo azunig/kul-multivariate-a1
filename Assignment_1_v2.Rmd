@@ -37,12 +37,123 @@ knitr::opts_chunk$set(echo = TRUE)
 Data from wvs.R file contain 33 variables and 32684 observations. All of them are numeric with exception of country variable that is a factor.
  
 ```{r step_1}
+options(scipen=999)
 print("a")
 load("wvs.Rdata")
 str(wvs)
 zscore <- function(x) {
   zscore <- (x-mean(x))/sd(x)
 } 
+
+```
+
+
+# Damiano
+
+```{r step_damiano }
+
+#Exploratory factor analysis (EFA)
+#load("C:/Users/damia/Desktop/lavoro multivariate statistics/wvs.Rdata")
+
+#standardize data
+zwvs<-as.data.frame(scale(wvs[,16:29]),center=TRUE,scale=TRUE)
+
+#run PCA
+pcawvs<-prcomp(zwvs)
+
+#screeplot
+screeplot(pcawvs,type="lines")
+abline(a=0, b=1, h=1, v=0)
+
+
+
+#analysis 3-factor model with no rotation
+fact3<-factanal(~J_claiming_benefits+J_avoiding_fare+J_stealing_property+J_cheating_taxes+J_accept_bribe+J_homosexuality
++J_prostitution+J_abortion+J_divorce+J_sex_before_marriage+J_suicide+J_beat_wife+J_parents_beating_children
++J_violence,factors=3,method="mle",rotatio="none",data=zwvs)
+
+print(fact3,cutoff=0)
+
+#compute communalities
+round(1-fact3$uniqueness,2)
+
+#print loadings
+print(fact3$loadings,cutoff=0,digits=2)
+
+#compute residual corr
+cormat<-cor(zwvs)
+resid3<-cormat-(crossprod(t(fact3$loadings))+diag(fact3$uniquenesses))
+
+#compute number of residual correlations with absolute value larger than 0.05 below the diagonal
+n3<-sum(ifelse(abs(resid3)>0.05,1,0))/2
+
+#compute proportion of residual correlations with absolute value larger than 0.05 below the diagonal
+print(n3/(14*13/2))
+
+
+
+#analysis 3-factor model with varimax rotation
+fact3vm<-factanal(~J_claiming_benefits+J_avoiding_fare+J_stealing_property+J_cheating_taxes+J_accept_bribe+J_homosexuality+
+J_prostitution+J_abortion+J_divorce+J_sex_before_marriage+J_suicide+J_beat_wife
++J_parents_beating_children+J_violence,factors=3,method="mle",rotatio="varimax",data=zwvs)
+print(fact3vm,cutoff=0)
+
+#compute communalities
+round(1-fact3vm$uniqueness,2)
+
+#print loadings
+print(fact3vm$loadings,cutoff=0,digits=2)
+
+
+#compute residual corr
+cormat<-cor(zwvs)
+resid3vm<-cormat-(crossprod(t(fact3vm$loadings))+diag(fact3vm$uniquenesses))
+
+#compute number of residual correlations with absolute value larger than 0.05 below the diagonal
+n3vm<-sum(ifelse(abs(resid3vm)>0.05,1,0))/2
+
+#compute proportion of residual correlations with absolute value larger than 0.05 below the diagonal
+print(n3vm/(14*13/2))
+
+
+
+library(psych)
+library(GPArotation)
+
+#extract 3 factors and use oblique rotation
+fact3obl<-fa(zwvs,3,rotate="oblimin",fm="mle")
+print(fact3obl,cutoff=0)
+
+# residual correlation
+resid3obl<-cor(zwvs)-(fact3obl$loadings%*%fact3obl$Phi%*%t(fact3obl$loadings)+diag(fact3obl$uniquenesses))
+
+#compute proportion of residual correlations with absolute value larger than 0.05 below the diagonal
+n3obl<-sum(ifelse(abs(resid3obl)>0.05,1,0))/2
+
+print(n3obl/(14*13/2))
+
+
+
+#save score
+score<-cbind(wvs[33],fact3obl$scores)
+
+
+## distribution Factor 1 per country
+par(pty="s")
+par(las=1,cex=0.5) 
+par(oma=c(2,6,2,2)) 
+boxplot(score$ML1~score$country,horizontal=TRUE,xlab="factor score",ylab="",main="Financial")
+
+par(pty="s")
+par(las=1,cex=0.5) 
+par(oma=c(2,6,2,2))
+boxplot(score$ML2~score$country,horizontal=TRUE,xlab="factor score",ylab="",main="Interpersonal")
+
+par(pty="s")
+par(las=1,cex=0.5) 
+par(oma=c(2,6,2,2))
+boxplot(score$ML3~score$country,horizontal=TRUE,xlab="factor score",ylab="",main="Violencial")
+
 
 ```
 
@@ -73,14 +184,32 @@ Firstly, a model with 3 latent variables verified from the previous analysis ( *
          #Violence =~ J_prostitution it was not be included as the relation with the latent variable is low see std.lv 0.157
 
 sem1<- ' Interpersonal =~ 1*J_homosexuality+J_prostitution+J_abortion+J_divorce+J_sex_before_marriage+J_suicide
-         Financial =~ 1*J_claiming_benefits+J_avoiding_fare+J_stealing_property+J_cheating_taxes+J_accept_bribe
-         Violence =~ 1*J_beat_wife+ J_parents_beating_children+J_violence
-         Financial ~~ Violence
-         Religious =~ 1*R_attend_religious_services + R_pray + R_importance_God
+         Financial     =~ 1*J_claiming_benefits+J_avoiding_fare+J_stealing_property+J_cheating_taxes+J_accept_bribe
+         Violence      =~ 1*J_beat_wife+ J_parents_beating_children+J_violence
+         Financial     ~~ Violence
+          Financial ~~ J_suicide
+          Violence ~~ J_suicide
+          Violence ~~ J_prostitution
+          J_homosexuality ~~ J_sex_before_marriage
+         Religious     =~ 1*R_attend_religious_services + R_pray + R_importance_God
          Interpersonal ~ Religious 
-         Financial ~ Religious 
-         Violence ~ Religious
-'
+         Financial     ~ Religious 
+         Violence      ~ Religious '
+
+##Financial     ~~ Violence afirmo correlacion entre 2 latentes(*)
+##Interpersonal ~ Religious  regresion
+
+cfa2<-'Financial =~1*J_claiming_benefits+J_avoiding_fare+J_stealing_property+J_cheating_taxes+J_accept_bribe
+       Interpersonal =~1*J_homosexuality+J_prostitution+J_abortion+J_divorce+J_sex_before_marriage+J_suicide
+       Violence =~1*J_beat_wife+J_parents_beating_children+J_violence
+       Financial ~~Violence
+       Financial ~~J_suicide
+       Violence ~~J_suicide
+       Violence ~~J_prostitution
+       J_homosexuality ~~J_sex_before_marriage';
+
+#varianzas a 1 
+#primer componente Idenfificadad 
 
 ```
 
@@ -107,7 +236,8 @@ raw_data_c <- cbind(data.frame(raw_data),country = raw_country$country)
 ```{r p4_step_3}
 
 #Fit Structural Equation Models, using as a parameter sem1 and filtering data. Is not using a covariance matrix because it will be use a country as a column.
-fitsem1<-sem(sem1, data = raw_data_c)
+fitsem1<-lavaan::sem(sem1, data = raw_data_c)
+
 #check goodness of fit
 fitmeasures(fitsem1, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr"))
 
@@ -120,10 +250,22 @@ fitmeasures(fitsem1, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr"))
 Accordingly to the regression results, the latent variable __religious__ has a P-value __lower than 0.05__ for the three regressions, this means that there is enough evidence __to reject the null hypothesis__ that the estimate is __0__. With this, can be concluded that the religious variable has an impact into Interpersonal, Financial and Violence justifiability behaviours variables. In addition, is possible to say for two variables this impact is positive, however, for the other variable, (Interpersonal) is the opposite. This can mean that higher the level of religious in a person, lower the justification of behaviours regarding Interpersonal relations. Contrary, higher the level of religiousness higher the justification of behaviours regarding Financial and Violence conflicts. 
 
 ```{r p4_step_4}
-summary(fitsem1, standardized=TRUE)
 
-semPaths(fitsem1,"model","std","lisrel", edge.label.cex = 1.2, intercepts = FALSE, layout = "tree2",
-panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRUE, rotation = 1)
+#install.packages("stargazer")
+#library(stargazer)
+summary(fitsem1, standardized=TRUE)
+lavaan::standardizedSolution(fitsem1)
+
+
+#semPaths(fitsem1,"model","std","lisrel", edge.label.cex = 1.2, intercepts = FALSE, layout = "tree2",
+#panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRUE, rotation = 1)
+
+
+semPaths(fitsem1, "std", edge.label.cex = 0.5, curvePivot = TRUE, groups = "latent", pastel = TRUE, rotation = 2)
+
+
+title("SEM path Diagram                       ")
+text(-0.4,-.99999,"Netherlands & Malaysia")
 
 ```
 
@@ -141,7 +283,7 @@ For Netherlands, __the goodness of fit index CFI and TLI are not higher than cri
 ```{r p4_step_5}
 
 #Firstly, filter data of Netherlands
-fitsem_n <- sem(sem1,data = raw_data_c[raw_data_c$country %in% c("Netherlands"),])
+fitsem_n <- lavaan::sem(sem1,data = raw_data_c[raw_data_c$country %in% c("Netherlands"),])
 #Secondly, analyse summary
 fitmeasures(fitsem_n, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr"))
 
@@ -153,9 +295,14 @@ Results for regressions indicate that __2 of the 3 regression are not significan
 ```{r p4_step_6}
 summary(fitsem_n, standardized=TRUE)
 
-semPaths(fitsem_n,"model","std","lisrel", edge.label.cex = 1.2, intercepts = FALSE, layout = "tree2",
-panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRUE, rotation = 1)
-title("Netherlands")
+#semPaths(fitsem_n,"model","std","lisrel", edge.label.cex = 1.2, intercepts = FALSE, layout = "tree2",
+#panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRUE, rotation = 1)
+#title("Netherlands")
+semPaths(fitsem_n, "std", edge.label.cex = 0.5, curvePivot = TRUE, groups = "latent", pastel = TRUE, rotation = 2)
+
+
+title("SEM path Diagram                       ")
+text(-0.4,-.99999,"Netherlands")
 
 ```
 
@@ -164,7 +311,7 @@ title("Netherlands")
 ```{r p4_step_7}
 
 #Firstly, filter data 
-fitsem_m <- sem(sem1, data = raw_data_c[raw_data_c$country %in% c("Malaysia"),])
+fitsem_m <- lavaan::sem(sem1, data = raw_data_c[raw_data_c$country %in% c("Malaysia"),])
 fitmeasures(fitsem_m, c("chisq", "df", "pvalue", "cfi", "tli", "rmsea", "srmr"))
 
 ```
@@ -179,6 +326,15 @@ summary(fitsem_m, standardized=TRUE)
 semPaths(fitsem_m,"model","std","lisrel", edge.label.cex = 1.2, intercepts = FALSE, layout = "tree2",
 panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRUE, rotation = 1)
 title("Malaysia")
+
+#semPaths(fitsem_n,"model","std","lisrel", edge.label.cex = 1.2, intercepts = FALSE, layout = "tree2",
+#panelGroups = FALSE, ask = FALSE, groups = "latent", pastel = TRUE, exoCov = TRUE, rotation = 1)
+#title("Netherlands")
+semPaths(fitsem_m, "std", edge.label.cex = 0.5, curvePivot = TRUE, groups = "latent", pastel = TRUE, rotation = 2)
+
+
+title("SEM path Diagram                       ")
+text(-0.4,-.99999,"Malaysia")
 
 ```
 
@@ -206,22 +362,160 @@ set_x <- c("R_attend_religious_services","R_pray","R_importance_God", "CR_robber
   
 set_y <- c("J_claiming_benefits", "J_avoiding_fare", "J_stealing_property", "J_cheating_taxes", "J_accept_bribe", "J_homosexuality", "J_prostitution", "J_abortion", "J_divorce", "J_sex_before_marriage", "J_suicide", "J_beat_wife", "J_parents_beating_children", "J_violence")
 
-ds <- wvs[wvs$country %in% c("Netherlands","Malaysia"),c(set_x, set_y, "country")]
+ds2 <- wvs[wvs$country %in% c("Netherlands","Malaysia"),c(set_x, set_y, "country")]
+
+#conduct canonical correlation analysis
+cancor.out12 <- cancor(x = ds2[,set_x], y = ds2[,set_y], xcenter = TRUE, ycenter = TRUE) 
+summary(cancor.out12)
+cancor.out12$structure$X.xscores
+cancor.out12$structure$X
+
+cancor.out12$structure$Y.yscores
+
+cancor.out12$structure$X.yscores
+cancor.out12$structure$Y.xscores
+plot(cancor.out12)
+
+Xcan12 <- cancor.out12$scores$X[,1]
+Ycan12 <- cancor.out12$scores$Y[,1]
+XY <- data.frame(Xcan12, Ycan12, country = ds2$country)
+
+#geom_point(data = XY, aes(color = country))
+
+ggplot(XY, aes(x= Xcan12, y= Ycan12)) +
+  scale_fill_distiller() +
+  geom_point(aes(color = country)) +
+labs(title = "Canonical Correspondence Analysis") +
+  xlab("u1") +
+  ylab("t1") 
+
+print(redundancy(cancor.out12))
 
 #str(ds)
 ```
  
+
+# Netherlands
+ 
+```{r 5step_Netherland}
+
+#Creating both sets of variables  
+
+dsN <- wvs[wvs$country %in% c("Netherlands"),c(set_x, set_y, "country")]
+
+#conduct canonical correlation analysis
+cancor.out1N <- cancor(x = dsN[,set_x], y = dsN[,set_y], xcenter = TRUE, ycenter = TRUE) 
+summary(cancor.out1N)
+cancor.out1N$structure$X.xscores
+
+cancor.out1N$structure$Y.yscores
+
+cancor.out1N$structure$X.yscores
+cancor.out1N$structure$Y.xscores
+
+Xcan1N <- cancor.out1N$scores$X[,1]
+Ycan1N <- cancor.out1N$scores$Y[,1]
+XYN <- data.frame(Xcan1N, Ycan1N, country = dsN$country)
+
+#geom_point(data = XY, aes(color = country))
+
+ggplot(XYN, aes(x= Xcan1N, y= Ycan1N)) +
+    scale_fill_distiller() +
+  geom_point(aes(color = country)) +
+labs(title = "Canonical Correspondence Analysis")+
+  xlab("u1") +
+  ylab("t1") 
+
+print(redundancy(cancor.out1N))
+
+#str(ds)
+``` 
+
+# Malaysia
+
+```{r 5step_Malaysia}
+
+#Creating both sets of variables  
+
+dsM <- wvs[wvs$country %in% c("Malaysia"),c(set_x, set_y, "country")]
+
+#conduct canonical correlation analysis
+cancor.out1M <- cancor(x = dsM[,set_x], y = dsM[,set_y], xcenter = TRUE, ycenter = TRUE) 
+summary(cancor.out1M)
+cancor.out1M$structure$X.xscores
+
+cancor.out1M$structure$Y.yscores
+
+cancor.out1M$structure$X.yscores
+cancor.out1M$structure$Y.xscores
+
+Xcan1M <- cancor.out1M$scores$X[,1]
+Ycan1M <- cancor.out1M$scores$Y[,1]
+XY <- data.frame(Xcan1M, Ycan1M, country = dsM$country)
+
+#geom_point(data = XY, aes(color = country))
+
+ggplot(XY, aes(x= Xcan1M, y= Ycan1M)) +
+  scale_fill_distiller() +
+  geom_point(aes(color = country)) +
+labs(title = "Canonical Correspondence Analysis") +
+  xlab("u1") +
+  ylab("t1") 
+
+
+print(redundancy(cancor.out1M))
+#str(ds)
+``` 
+
  
 ```{r 5step_2}
 #conduct canonical correlation analysis
-cancor.out1 <- cancor(x = ds[,set_x], y = ds[,set_y], xcenter = TRUE, ycenter = TRUE) 
-summary(cancor.out1)
-cancor.out1$structure$X.xscores
-cancor.out1$structure$Y.yscores
+# cancor.out12 <- cancor(x = ds2[,set_x], y = ds2[,set_y], xcenter = TRUE, ycenter = TRUE) 
+# summary(cancor.out12)
+# cancor.out1$structure$X.xscores
+# cancor.out1$structure$X
+# 
+# cancor.out1$structure$Y.yscores
+# 
+# cancor.out1$structure$X.yscores
+# cancor.out1$structure$Y.xscores
+# plot(cancor.out1)
+# 
+# Xcan1 <- cancor.out1$scores$X[,1]
+# Ycan1 <- cancor.out1$scores$Y[,1]
+# XY <- data.frame(Xcan1, Ycan1, country = ds$country)
+# 
+# #geom_point(data = XY, aes(color = country))
+# 
+# ggplot(XY, aes(x= Xcan1, y= Ycan1)) +
+#   scale_color_brewer(palette="Paired") +
+#   geom_point(aes(color = country)) +
+# labs(title = "Canonical Correspondence Analysis")
+#+
+#  stat_ellipse()
+#library(tidyverse)
 
-cancor.out1$structure$X.yscores
-cancor.out1$structure$Y.xscores
-plot(cancor.out1)
+#ccavectors <- as.matrix(scores(cancor.out1)) %>% 
+#  as.data.frame()
+
+#species_data <- scores(cancor.out1, display = "country") %>% 
+#  as.data.frame()
+  
+#plot_cca <- ggplot(XY) +
+#  geom_point(aes(x = Xcan1, y = Ycan1, color = country), shape = 19, size = 2, alpha = 0.8) +
+#  coord_fixed() +
+  #scale_color_manual(values = pal) +
+#  geom_segment(data = species_data, aes(x = 0, y = 0, xend = Xcan1, yend = Ycan1), arrow = arrow(length = unit(0.2, "cm"))) +
+#  geom_vline(xintercept = c(0), color = "grey70", linetype = 2) +
+#  geom_hline(yintercept = c(0), color = "grey70", linetype = 2) +
+#  geom_point(data = XY, aes(x = Xcan1, y = Ycan1), shape = 17, size = 2, color = "slateblue") +
+#  scale_x_continuous(limits = c(-1.5, 1.5)) +
+#  scale_y_continuous(limits = c(-2, 2)) +
+#  geom_text(data = ccavectors, aes(x = Xcan1, y = Ycan1, label = rownames(ccavectors)), nudge_x = 0.3, nudge_y = 0.3) +
+#clean_background +
+  #labs(title = "Canonical Correspondence Analysis")
+#plot_cca
+  
 
 ```
 
@@ -233,62 +527,65 @@ The **H0 test** indicate that the __first five canonical__ correlations are sign
 
 For the current analysis there are 5 significant canonical correlations, however, three of them explain the higher amount of variance. For that reason, the first three are selected to be interpreted.
   
- __CC1 ->__ Is represented by religious beliefs on x variables and interpersonal matters on the y variables.
-    Less religiosity more justification in sexual behaviour (such as homosexuality,prostitution, abortion, divorce, sex before marriage.)
+__CC1 ->__ Is represented by religious beliefs on x variables and interpersonal matters on the y variables.
+  Less religiosity more justification in sexual behaviour (such as homosexuality,prostitution, abortion, divorce, sex before marriage.)
 
  
 **3. How much variance in the Y variables can be explained by the X variables?**  
 
-By using just the first canonical correlation __92.84477__ percent of the variance can be explained, this is clear as the eigenvalue for this correlation is higher than 1.    
+By using just the first canonical correlation __92.84477__ percent of the variance can be explained, this is clear as the eigenvalue for this correlation is higher than 1.
 
 ```{r 5step_x}
 
-print(redundancy(cancor.out1))
+#redundancy(cancor.out1))
+
+#print(redundancy(cancor.out1))
+
 
 ```
 
-```{r 5step_x}
+```{r 5step_x1}
 
 #split data in two parts and standardize data
-train<-ds[seq(2,nrow(ds),by=2),]
-valid<-ds[seq(1,nrow(ds),by=2),]
-train[,2:11]<-scale(train[,2:11],center=TRUE,scale=TRUE)
-valid[,2:11]<-scale(valid[,2:11],center=TRUE,scale=TRUE)
-
-#conduct CCA on calibration data
-cancor.train<-cancor(cbind(J_claiming_benefits, J_avoiding_fare, J_stealing_property, J_cheating_taxes, J_accept_bribe, J_homosexuality, J_prostitution, J_abortion, J_divorce, J_sex_before_marriage, J_suicide, J_beat_wife, J_parents_beating_children, J_violence)
-~R_attend_religious_services + R_pray + R_importance_God + CR_robberies + CR_alcohol + CR_police_military + CR_racist_behavior + CR_drug_sale,data=train)
-summary(cancor.train)
-cancor.train$structure$X.xscores
-cancor.train$structure$Y.yscores
-
-#conduct CCA on validation data
-cancor.valid<-cancor(cbind(J_claiming_benefits, J_avoiding_fare, J_stealing_property, J_cheating_taxes, J_accept_bribe, J_homosexuality, J_prostitution, J_abortion, J_divorce, J_sex_before_marriage, J_suicide, J_beat_wife, J_parents_beating_children, J_violence)
-~ R_attend_religious_services + R_pray + R_importance_God + CR_robberies + CR_alcohol + CR_police_military + CR_racist_behavior + CR_drug_sale,data=valid)
-summary(cancor.valid)
-cancor.valid$structure$X.xscores
-cancor.valid$structure$Y.yscores
-
-
-# canonical variates calibration set
-train.X1<-cancor.train$score$X
-train.Y1<-cancor.train$score$Y
+# train<-ds[seq(2,nrow(ds),by=2),]
+# valid<-ds[seq(1,nrow(ds),by=2),]
+# train[,2:11]<-scale(train[,2:11],center=TRUE,scale=TRUE)
+# valid[,2:11]<-scale(valid[,2:11],center=TRUE,scale=TRUE)
+# 
+# #conduct CCA on calibration data
+# cancor.train<-cancor(cbind(J_claiming_benefits, J_avoiding_fare, J_stealing_property, J_cheating_taxes, J_accept_bribe, J_homosexuality, J_prostitution, J_abortion, J_divorce, J_sex_before_marriage, J_suicide, J_beat_wife, J_parents_beating_children, J_violence)
+# ~R_attend_religious_services + R_pray + R_importance_God + CR_robberies + CR_alcohol + CR_police_military + CR_racist_behavior + CR_drug_sale,data=train)
+# summary(cancor.train)
+# cancor.train$structure$X.xscores
+# cancor.train$structure$Y.yscores
+# 
+# #conduct CCA on validation data
+# cancor.valid<-cancor(cbind(J_claiming_benefits, J_avoiding_fare, J_stealing_property, J_cheating_taxes, J_accept_bribe, J_homosexuality, J_prostitution, J_abortion, J_divorce, J_sex_before_marriage, J_suicide, J_beat_wife, J_parents_beating_children, J_violence)
+# ~ R_attend_religious_services + R_pray + R_importance_God + CR_robberies + CR_alcohol + CR_police_military + CR_racist_behavior + CR_drug_sale,data=valid)
+# summary(cancor.valid)
+# cancor.valid$structure$X.xscores
+# cancor.valid$structure$Y.yscores
+# 
+# 
+# # canonical variates calibration set
+# train.X1<-cancor.train$score$X
+# train.Y1<-cancor.train$score$Y
 
 # compute canonical variates using data of calibration set and coefficients estimated on validation set
-train.X2<-as.matrix(train[,2:6])%*%cancor.valid$coef$X
-train.Y2<-as.matrix(train[,7:11])%*%cancor.valid$coef$Y
+#train.X2<-as.matrix(train[,2:6])%*%cancor.valid$coef$X
+#train.Y2<-as.matrix(train[,7:11])%*%cancor.valid$coef$Y
 
 
 
 #R(T,T*) and R(U,U*)
-round(cor(train.Y1,train.Y2)[1:3,1:3],3)
-round(cor(train.X1,train.X2)[1:3,1:3],3)
+#round(cor(train.Y1,train.Y2)[1:3,1:3],3)
+#round(cor(train.X1,train.X2)[1:3,1:3],3)
 #R(U*,T*) versus R(U,T)
-round(cor(train.X1,train.Y1)[1:3,1:3],3)
-round(cor(train.X2,train.Y2)[1:3,1:3],3)
+#round(cor(train.X1,train.Y1)[1:3,1:3],3)
+#round(cor(train.X2,train.Y2)[1:3,1:3],3)
 #R(T*,T*) and R(U*,U*)
-round(cor(train.Y2,train.Y2)[1:3,1:3],3)
-round(cor(train.X2,train.X2)[1:3,1:3],3)
+#round(cor(train.Y2,train.Y2)[1:3,1:3],3)
+#round(cor(train.X2,train.X2)[1:3,1:3],3)
 
 
 ```
